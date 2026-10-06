@@ -32,6 +32,5 @@ urlpatterns = [
     path('accounts/signup/', views.signup_view, name='signup'),
     
     # Simple homepage target
-    path('/', views.home_view, name='home'),
     path('', views.home_view, name='home')
 ]
