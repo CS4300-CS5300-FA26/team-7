@@ -1,0 +1,44 @@
+<!-- devedu AI code repurposed from homework 2, https://getbootstrap.com/docs/3.4/css/?#tables -->
+
+<!-- Applies the base template -->
+{% extends "crate/base.html" %}
+
+<!-- lists songs using bootstrap table -->
+{% block content %}
+
+    <!-- container for the song list -->
+	<div class="container mt-5">
+		<h1>Songs</h1>
+
+        <!-- If song entities exist in the database -->
+		{% if songs %}	
+			<!-- Table view of songs -->
+			<table class="table table-striped">
+				<!-- displays column titles for the table -->
+				<thead>
+					<tr>
+						<th>Title</th>
+						<th>Artist</th>
+						<th>Genre</th>
+						<th>Duration</th>
+					</tr>
+				</thead>
+				<!-- Body for the table: displays content for each song entity -->
+				<tbody>
+					{% for song in songs %}
+						<tr>
+							<td>{{ song.title }}</td>
+							<td>{{ song.artist }}</td>
+							<td>{{ song.genre }}</td>
+							<td>{{ song.duration_seconds }} seconds</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+
+        <!-- If no song entities exist in the database -->
+		{% else %}
+			<p>No songs are currently available.</p>
+		{% endif %}
+	</div>
+{% endblock %}

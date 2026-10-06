@@ -17,6 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+# allows us to take our views and create a url to that page
+from crate import views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # leaving as main page until we make a dedicated page for home
+    path('', views.song_list, name='song_list'),
 ]
