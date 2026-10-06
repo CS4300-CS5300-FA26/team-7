@@ -321,3 +321,5 @@ class AuthFlowIntegrationTests(TestCase):
         # Log back in -> access restored
         self.client.post(reverse("login"), {"username": "flow", "password": STRONG_PASSWORD})
         self.assertEqual(self.client.get(reverse("song_list")).status_code, 200)
+
+# Create your tests here.
