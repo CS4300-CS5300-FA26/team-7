@@ -1,0 +1,14 @@
+{% extends "crate/base.html" %}
+
+{% block title %}Sign up - Crate{% endblock %}
+{% block content %}
+  <div class="container mt-5">
+    <h2 style="margin-bottom: 3vh;">Create an Account</h2>
+    <form method="post" style="margin-bottom: 3vh;">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>Already have an account? <a href="{% url 'login' %}">Log in here</a>.</p>
+  </div>
+{% endblock %}

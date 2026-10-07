@@ -15,7 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from crate import views
 
 # allows us to take our views and create a url to that page
 from crate import views
@@ -23,5 +24,13 @@ from crate import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     # leaving as main page until we make a dedicated page for home
-    path('', views.song_list, name='song_list'),
+     path('song_list/', views.song_list, name='song_list'),
+
+    #For user authentication
+    path('accounts/', include('django.contrib.auth.urls')),
+    # Custom signup URL
+    path('accounts/signup/', views.signup_view, name='signup'),
+    
+    # Simple homepage target
+    path('', views.home_view, name='home')
 ]
