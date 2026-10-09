@@ -29,3 +29,23 @@ def song_list(request):
     songs = Song.objects.all()
     # pass the songs to the template as songs and render the page
     return render(request, 'crate/song_list.html', {'songs': songs})
+
+@login_required
+def my_account(request):
+    return render(request, 'crate/myaccount.html')
+
+@login_required
+def my_songs(request):
+    return render(request, 'crate/mysongs.html')
+
+@login_required
+def playlists(request):
+    return render(request, 'crate/playlists.html')
+
+@login_required
+def recommendations(request):
+    return render(request, 'crate/recommendations.html')
+
+@login_required
+def song_list(request):
+    return render(request, 'crate/song_list.html')

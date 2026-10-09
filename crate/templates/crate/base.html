@@ -17,8 +17,8 @@
             <li><a href="#" class="nav-link px-2 text-secondary">Home</a></li> 
             {% if user.is_authenticated %}
             <li><a href="{% url 'playlists' %}" class="nav-link px-2 text-white">Playlists</a></li>
-            <li><a href="{% url 'myaccount' %}" class="nav-link px-2 text-white">My Account</a></li>
-            <li><a href="{% url 'mysongs' %}" class="nav-link px-2 text-white">My Songs</a></li> 
+            <li><a href="{% url 'my_account' %}" class="nav-link px-2 text-white">My Account</a></li>
+            <li><a href="{% url 'my_songs' %}" class="nav-link px-2 text-white">My Songs</a></li> 
             <li><a href="{% url 'recommendations' %}" class="nav-link px-2 text-white">Recommendations</a></li> 
             {% else %}
             <li><a href="/" class="nav-link px-2 text-white">About Crate</a></li> 

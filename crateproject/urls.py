@@ -24,7 +24,11 @@ from crate import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     # leaving as main page until we make a dedicated page for home
-     path('song_list/', views.song_list, name='song_list'),
+    path('song_list/', views.song_list, name='song_list'),
+    path('recommendations/', views.recommendations, name='recommendations'),
+    path('playlists/', views.playlists, name='playlists'),
+    path('mysongs/', views.my_songs, name='my_songs'),
+    path('myaccount/', views.my_account, name='my_account'),
 
     #For user authentication
     path('accounts/', include('django.contrib.auth.urls')),
