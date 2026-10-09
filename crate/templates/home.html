@@ -2,6 +2,9 @@
 
 
 {% block content %}
+
+
+
 <div class="homepage container mt-5 center-items">
 
     <h2>Welcome to Crate</h2>
@@ -9,11 +12,7 @@
     {% if user.is_authenticated %}
     <p>Hello, <strong>{{ user.username }}</strong>!</p>
     
-    <!-- Django 5+ requires a POST request to securely log out -->
-    <form action="{% url 'logout' %}" method="post" style="margin-bottom: 3vh;">
-        {% csrf_token %}
-        <button type="submit">Log Out</button>
-    </form>
+
 
     <a href="{% url 'song_list' %} ">My Songs</a>
     {% else %}
@@ -21,4 +20,7 @@
     <a href="{% url 'login' %}">Log In</a> | <a href="{% url 'signup' %}">Sign Up</a>
     {% endif %}
 </div>
+
+
+
 {% endblock %}
