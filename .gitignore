@@ -20,6 +20,9 @@ db.sqlite3
 *.log
 
 # VS Code
+.vscode/
+.vscode/*
+**/.vscode/
 **/.vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
