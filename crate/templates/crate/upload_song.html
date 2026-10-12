@@ -1,0 +1,27 @@
+
+<!-- Applies the base template -->
+{% extends "crate/base.html" %}
+
+<!-- lists songs using bootstrap table -->
+{% block content %}
+	<div class="container mt-5">
+
+        <!-- upload.html Form View -->
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Upload Track</button>
+        </form>
+
+        <!-- track_list.html Display View -->
+        {% for song in songs %}
+            <div>
+                <h3>{{ song.title }} - {{ song.artist }}</h3>
+                <audio controls>
+                    <source src="{{ song.audio_file.url }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

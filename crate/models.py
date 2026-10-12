@@ -14,8 +14,8 @@ class Song(models.Model):
         on_delete=models.CASCADE,
         related_name='songs'  # Allows you to query: user.songs.all()
     )'''
-
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    audio_file = models.FileField(upload_to="audio/", default='')
 
     def __str__(self):
         return f"{self.title} — {self.artist}"

@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from crate.models import Song
+from .forms import SongForm
 
 # we will use this when setting up authentication through Django accounts
 from django.contrib.auth.decorators import login_required
@@ -41,3 +42,15 @@ def playlists(request):
 @login_required
 def recommendations(request):
     return render(request, 'crate/recommendations.html')
+
+@login_required
+def upload_song(request):
+    if request.method == 'POST':
+        form = SongForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('song_list')
+
+    else:
+        form = SongForm()
+    return render(request, 'crate/upload_song.html', {'form': form})
