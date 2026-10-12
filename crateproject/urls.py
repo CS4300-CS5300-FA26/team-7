@@ -27,7 +27,7 @@ urlpatterns = [
     path('song_list/', views.song_list, name='song_list'),
     path('recommendations/', views.recommendations, name='recommendations'),
     path('playlists/', views.playlists, name='playlists'),
-    path('mysongs/', views.my_songs, name='my_songs'),
+    path('song_list/', views.song_list, name='song_list'),
     path('myaccount/', views.my_account, name='my_account'),
 
     #For user authentication
