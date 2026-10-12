@@ -32,11 +32,7 @@ def song_list(request):
 
 @login_required
 def my_account(request):
-    return render(request, 'crate/myaccount.html')
-
-@login_required
-def my_songs(request):
-    return render(request, 'crate/mysongs.html')
+    return render(request, 'crate/my_account.html')
 
 @login_required
 def playlists(request):
@@ -45,7 +41,3 @@ def playlists(request):
 @login_required
 def recommendations(request):
     return render(request, 'crate/recommendations.html')
-
-@login_required
-def song_list(request):
-    return render(request, 'crate/song_list.html')
