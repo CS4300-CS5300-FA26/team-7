@@ -283,7 +283,7 @@ class SongListViewTests(TestCase):
     def test_lists_all_songs(self):
         Song.objects.create(
             title="So What", artist="Miles Davis", genre="Jazz", duration_seconds=562
-        )
+        ) 
         Song.objects.create(title="Africa", artist="Toto", genre="Rock")
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -321,5 +321,3 @@ class AuthFlowIntegrationTests(TestCase):
         # Log back in -> access restored
         self.client.post(reverse("login"), {"username": "flow", "password": STRONG_PASSWORD})
         self.assertEqual(self.client.get(reverse("song_list")).status_code, 200)
-
-# Create your tests here.
