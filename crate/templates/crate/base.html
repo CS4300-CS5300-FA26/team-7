@@ -31,12 +31,12 @@
           <div class="text-end"> 
           {% if not user.is_authenticated %}
               <a class="btn btn-primary" href="{% url 'login' %}"><i class="fa-solid fa-right-to-bracket"></i>Log In</a>
-              <a class="btn btn-warning" href="{% url 'signup' %}"><i class="fa-solid fa-right-from-bracket"></i>Sign-up</a>
+              <a class="btn btn-warning" href="{% url 'signup' %}">Sign-up</a>
           {% else %}
           <!-- Django 5+ requires a POST request to securely log out -->
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
-                <button class="btn btn-primary text-light me-2" type="submit">Log Out</button>
+                <button class="btn btn-primary text-light me-2" type="submit"><i class="fa-solid fa-right-from-bracket"></i>Log Out</button>
             </form>
           {% endif %}
           </div> 
