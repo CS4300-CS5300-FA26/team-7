@@ -27,6 +27,7 @@ urlpatterns = [
     path('song_list/', views.song_list, name='song_list'),
     path('recommendations/', views.recommendations, name='recommendations'),
     path('playlists/', views.playlists, name='playlists'),
+    path('playlists/create/', views.create_playlist, name='create_playlist'),
     path('my_account/', views.my_account, name='my_account'),
 
     #For user authentication
