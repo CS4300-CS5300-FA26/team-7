@@ -10,15 +10,13 @@
     <h2>Welcome to Crate</h2>
 
     {% if user.is_authenticated %}
-    <p>Hello, <strong>{{ user.username }}</strong>!</p>
-    
-
-
-    <a href="{% url 'song_list' %}">My Songs</a>
-    <a href="{% url 'playlists' %}">My Playlists</a>
+        <p>Hello, <strong>{{ user.username }}</strong>!</p>
+        
+        <a href="{% url 'song_list' %}">My Songs</a><br /><br />
+        <a href="{% url 'playlists' %}">My Playlists</a>
     {% else %}
-    <p>You are not logged in.</p>
-    <a href="{% url 'login' %}">Log In</a> | <a href="{% url 'signup' %}">Sign Up</a>
+        <p>You are not logged in.</p>
+        <a href="{% url 'login' %}">Log In</a> | <a href="{% url 'signup' %}">Sign Up</a>
     {% endif %}
 </div>
 
