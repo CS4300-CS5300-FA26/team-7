@@ -68,3 +68,11 @@ class Song(models.Model):
         if self._has_new_audio():
             self._set_duration_from_audio()
         super().save(*args, **kwargs)
+
+class Playlist(models.Model):
+    name = models.CharField(max_length=200)
+    songs = models.ManyToManyField(Song, related_name='playlists', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

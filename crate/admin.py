@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Song
+from .models import Song, Playlist
 
  
 @admin.register(Song)
@@ -9,3 +9,5 @@ class SongAdmin(admin.ModelAdmin):
     readonly_fields = ("minutes", "seconds")
     list_display = ("title", "artist", "genre", "minutes", "seconds")
  
+
+admin.site.register(Playlist)
