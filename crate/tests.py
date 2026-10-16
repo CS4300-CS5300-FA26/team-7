@@ -21,6 +21,7 @@ class SongModelTests(TestCase):
         song = Song.objects.create(title="Song", artist="Artist")
         self.assertEqual(song.genre, "")
         self.assertEqual(song.album, "")
+        self.assertEqual(song.audio_file, "")
         self.assertIsNone(song.duration_seconds)
  
     def test_all_fields_are_saved(self):
@@ -29,11 +30,13 @@ class SongModelTests(TestCase):
             artist="Miles Davis",
             genre="Jazz",
             album="Kind of Blue",
+            audio_file="media/kindofblue.mp3",
             duration_seconds=562,
         )
         song.refresh_from_db()
         self.assertEqual(song.genre, "Jazz")
         self.assertEqual(song.album, "Kind of Blue")
+        self.assertEqual(song.audio_file, "media/kindofblue.mp3")
         self.assertEqual(song.duration_seconds, 562)
  
     def test_duration_must_be_non_negative(self):
@@ -301,7 +304,7 @@ class SongListViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertNotContains(response, "<script>alert(1)</script>")
         self.assertContains(response, "&lt;script&gt;")
- 
+
  
 # ============ END-TO-END FLOW ==============
  

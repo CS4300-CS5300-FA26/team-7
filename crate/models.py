@@ -15,7 +15,7 @@ class Song(models.Model):
         related_name='songs'  # Allows you to query: user.songs.all()
     )'''
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
-    audio_file = models.FileField(upload_to="audio/", default='')
+    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} — {self.artist}"
