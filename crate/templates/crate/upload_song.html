@@ -14,10 +14,68 @@
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Upload Track</button>
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-upload"></i>Upload Track</button>
             </form>
         </div>
 
+        <script>
+        // When an audio file is chosen, ask the server to read its tags
+        // (title/artist/album/genre) and pre-fill the matching form fields.
+        (function () {
+            const fileInput = document.getElementById('id_audio_file');
+            const status = document.getElementById('metadata-status');
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const metadataUrl = "{% url 'song_metadata' %}";
+            const fieldNames = ['title', 'artist', 'album', 'genre'];
+            const autofilled = {};   // what we last put into each field
+            let latestRequest = 0;   // ignore responses from an older file choice
+ 
+            fileInput.addEventListener('change', async function () {
+                const file = fileInput.files[0];
+                if (!file) { return; }
+ 
+                const thisRequest = ++latestRequest;
+                status.textContent = 'Reading track info...';
+ 
+                const body = new FormData();
+                body.append('audio_file', file);
+ 
+                try {
+                    const response = await fetch(metadataUrl, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: body,
+                    });
+                    if (!response.ok) { throw new Error('Request failed'); }
+                    const metadata = await response.json();
+                    if (thisRequest !== latestRequest) { return; }
+ 
+                    let filled = 0;
+                    for (const name of fieldNames) {
+                        const input = document.getElementById('id_' + name);
+                        if (!input) { continue; }
+                        const value = metadata[name] || '';
+                        // Only touch a field that is empty or still holds our last autofill,
+                        // so anything the user typed themselves is never overwritten.
+                        if (input.value === '' || input.value === autofilled[name]) {
+                            input.value = value;
+                            autofilled[name] = value;
+                            if (value) { filled++; }
+                        }
+                    }
+                    status.textContent = filled
+                        ? 'Filled in track info from the file. Edit anything that looks wrong.'
+                        : 'No track info found in this file. Fill in the details below.';
+                } catch (error) {
+                    console.error('Could not read track info:', error);
+                    if (thisRequest === latestRequest) {
+                        status.textContent = 'Could not read track info from this file. Fill in the details below.';
+                    }
+                }
+            });
+        })();
+        </script>
+ 
 
     </div>
 {% endblock %}

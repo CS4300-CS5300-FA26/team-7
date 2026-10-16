@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.contrib.auth import login
 from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_POST
-from crate.models import Song, Playlist
+from crate.models import Song, Playlist, read_audio_metadata
 from .forms import SongForm
 
 # we will use this when setting up authentication through Django accounts
@@ -86,6 +87,18 @@ def upload_song(request):
         form = SongForm()
     return render(request, 'crate/upload_song.html', {'form': form})
 
+
+# Called by the upload page's JavaScript as soon as a file is chosen. Reads the
+# file's tags (title/artist/album/genre) and returns them as JSON so the form
+# can be pre-filled. Nothing is saved here.
+@login_required
+@require_POST
+def song_metadata(request):
+    audio_file = request.FILES.get('audio_file')
+    if audio_file is None:
+        return JsonResponse({'error': 'No file uploaded.'}, status=400)
+    return JsonResponse(read_audio_metadata(audio_file))
+ 
 @login_required
 @require_POST
 def song_delete(request, id):

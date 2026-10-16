@@ -1,10 +1,11 @@
 from django.db import models
 from django.conf import settings
 import mutagen
+from mutagen.easyid3 import EasyID3
 from django.core.exceptions import ValidationError
 from enum import Enum
-
-
+ 
+ 
 def read_audio_length(fileobj):
     """Return the length of an audio file in seconds, or None if it can't be read."""
     try:
@@ -19,13 +20,74 @@ def read_audio_length(fileobj):
             pass
     return length
  
-
+ 
+# Which tag names to try for each form field, best match first.
+METADATA_KEYS = {
+    "title": ("title",),
+    "artist": ("artist", "albumartist", "performer"),
+    "album": ("album",),
+    "genre": ("genre",),
+}
+ 
+ 
+def _first_text(sources, keys):
+    """First non-blank tag value for any of `keys`, looking through each tag source in turn."""
+    for key in keys:
+        for tags in sources:
+            try:
+                values = tags.get(key)
+            except Exception:
+                continue
+            if isinstance(values, str):
+                values = [values]
+            for value in values or []:
+                text = str(value).strip()
+                if text:
+                    return text[:200]  # the model fields are max_length=200
+    return None
+ 
+ 
+def read_audio_metadata(fileobj):
+    """
+    Return whatever title/artist/album/genre tags an audio file has, as a dict
+    like {"title": "So What", "artist": "Miles Davis"}. Fields the file doesn't
+    have are left out, and an unreadable or untagged file gives {}.
+    """
+    sources = []
+    try:
+        # easy=True gives the same tag names for mp3/m4a/flac/ogg
+        audio = mutagen.File(fileobj, easy=True)
+        if getattr(audio, "tags", None):
+            sources.append(audio.tags)
+    except Exception:
+        pass
+    try:
+        # Some files (notably FLAC) carry their tags in an ID3 header instead of,
+        # or as well as, their own tag format. Native tags win when both exist.
+        fileobj.seek(0)
+        sources.append(EasyID3(fileobj))
+    except Exception:
+        pass
+    finally:
+        try:
+            fileobj.seek(0)
+        except Exception:
+            pass
+ 
+    found = {}
+    for field, keys in METADATA_KEYS.items():
+        text = _first_text(sources, keys)
+        if text:
+            found[field] = text
+    return found
+ 
+ 
 class Song(models.Model):
     title = models.CharField(max_length=200)
     artist = models.CharField(max_length=200)
     genre = models.CharField(max_length=200, blank=True)
     album = models.CharField(max_length=200, blank=True)
-
+ 
     #for when songs are tied to a specific user.  Will go way outside the scope of this branch
     '''user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -36,7 +98,7 @@ class Song(models.Model):
     seconds = models.PositiveIntegerField(null=True, blank=True)
         
     audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True)
-
+ 
     def __str__(self):
         return f"{self.title} — {self.artist}"
         # ---- duration handling ----
@@ -69,11 +131,12 @@ class Song(models.Model):
         if self._has_new_audio():
             self._set_duration_from_audio()
         super().save(*args, **kwargs)
-
+ 
 class Playlist(models.Model):
     name = models.CharField(max_length=200)
     songs = models.ManyToManyField(Song, related_name='playlists', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+ 
     def __str__(self):
         return self.name
+ 

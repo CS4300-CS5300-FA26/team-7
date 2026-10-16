@@ -25,22 +25,26 @@ from crate import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # leaving as main page until we make a dedicated page for home
+    
     path('song_list/', views.song_list, name='song_list'),
     path('songs/<int:id>/delete/', views.song_delete, name='song_delete'),
+
     path('recommendations/', views.recommendations, name='recommendations'),
+    
     path('playlists/', views.playlists, name='playlists'),
     path('playlists/create/', views.create_playlist, name='create_playlist'),
-    path('my_account/', views.my_account, name='my_account'),
+ 
 
     #For user authentication
     path('accounts/', include('django.contrib.auth.urls')),
     # Custom signup URL
     path('accounts/signup/', views.signup_view, name='signup'),
+    path('my_account/', views.my_account, name='my_account'),
 
     # For file uploads
     path('upload_song/', views.upload_song, name="upload_song"),
-    
+    path('upload_song/metadata/', views.song_metadata, name="song_metadata"),
+       
     
     # Simple homepage target
     path('', views.home_view, name='home')
