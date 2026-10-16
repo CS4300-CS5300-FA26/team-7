@@ -5,14 +5,18 @@
 <!-- lists songs using bootstrap table -->
 {% block content %}
 	<div class="container mt-5">
-        <h1>Upload a Song</h1>
 
-        <!-- upload.html Form View -->
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Upload Track</button>
-        </form>
+        <div class="text-center center-items">
+            <h1>Upload a Song</h1>
+            <br />
+            <br />
+            <!-- upload.html Form View -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Upload Track</button>
+            </form>
+        </div>
 
 
     </div>
