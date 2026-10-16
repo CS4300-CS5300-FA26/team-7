@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 import mutagen
 from django.core.exceptions import ValidationError
+from enum import Enum
 
 
 def read_audio_length(fileobj):
