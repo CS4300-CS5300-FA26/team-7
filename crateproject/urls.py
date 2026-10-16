@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # leaving as main page until we make a dedicated page for home
     path('song_list/', views.song_list, name='song_list'),
+    path('songs/<int:id>/delete/', views.song_delete, name='song_delete'),
     path('recommendations/', views.recommendations, name='recommendations'),
     path('playlists/', views.playlists, name='playlists'),
     path('my_account/', views.my_account, name='my_account'),

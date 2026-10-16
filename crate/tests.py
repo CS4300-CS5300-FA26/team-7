@@ -303,6 +303,7 @@ class SongListViewTests(TestCase):
         self.assertContains(response, "9:22")
         self.assertContains(response, "Africa")
         self.assertNotContains(response, "No songs are currently available.")
+        
  
     def test_song_content_is_html_escaped(self):
         audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")

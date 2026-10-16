@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
+from django.views.decorators.http import require_POST
 from crate.models import Song
 from .forms import SongForm
 import mutagen
@@ -61,8 +62,14 @@ def upload_song(request):
                 return redirect('song_list')
         except Exception as e:
             print(f"Could not parse audio metadata: {e}")
-
+    
     else:
         form = SongForm()
     return render(request, 'crate/upload_song.html', {'form': form})
 
+@login_required
+@require_POST
+def song_delete(request, id):
+    song = get_object_or_404(Song, id=id)
+    song.delete()
+    return redirect('song_list')
