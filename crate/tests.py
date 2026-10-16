@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model, SESSION_KEY
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
@@ -261,6 +262,7 @@ class LogoutTests(TestCase):
 # ============ SONG LIST TESTS ==============
  
 class SongListViewTests(TestCase):
+    
     def setUp(self):
         self.user = User.objects.create_user("alice", password=STRONG_PASSWORD)
         self.url = reverse("song_list")
@@ -287,10 +289,11 @@ class SongListViewTests(TestCase):
         self.assertEqual(len(response.context["songs"]), 0)
  
     def test_lists_all_songs(self):
+        audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
         Song.objects.create(
-            title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22
+            title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22, audio_file=audio
         ) 
-        Song.objects.create(title="Africa", artist="Toto", genre="Rock")
+        Song.objects.create(title="Africa", artist="Toto", genre="Rock", audio_file=audio)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(len(response.context["songs"]), 2)
@@ -302,7 +305,8 @@ class SongListViewTests(TestCase):
         self.assertNotContains(response, "No songs are currently available.")
  
     def test_song_content_is_html_escaped(self):
-        Song.objects.create(title="<script>alert(1)</script>", artist="X")
+        audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
+        Song.objects.create(title="<script>alert(1)</script>", artist="X", audio_file=audio)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertNotContains(response, "<script>alert(1)</script>")

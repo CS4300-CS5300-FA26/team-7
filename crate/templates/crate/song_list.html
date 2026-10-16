@@ -26,6 +26,7 @@
 				<!-- Body for the table: displays content for each song entity -->
 				<tbody>
 					{% for song in songs %}
+						{% if song.audio_file %}
 						<tr>
 							<td>{{ song.title }} - {{ song.artist }}</td>
 							<td>{{ song.artist }}</td>
@@ -40,6 +41,7 @@
 								</div>
 							</td>
 						</tr>
+						{% endif %}
 					{% endfor %}
 				</tbody>
 			</table>
