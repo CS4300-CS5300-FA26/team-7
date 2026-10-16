@@ -60,4 +60,14 @@
 		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-solid fa-upload"></i>Upload Songs</a>
 
 	</div>
+	<script>
+    // Only one song plays at a time: when any player starts, pause all the others.
+    // "play" events don't bubble, so this listens during the capture phase on document.
+    document.addEventListener('play', function (event) {
+        if (!(event.target instanceof HTMLAudioElement)) { return; }
+        document.querySelectorAll('audio').forEach(function (audio) {
+            if (audio !== event.target && !audio.paused) { audio.pause(); }
+        });
+    }, true);
+</script>
 {% endblock %}
