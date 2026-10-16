@@ -43,7 +43,7 @@
 							<td>
             					<form action="{% url 'song_delete' song.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete &quot;{{ song.title }}&quot;?');">
 									{% csrf_token %}
-					                <button type="submit" style="color: red; cursor: pointer;">Delete</button>
+					                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-can"></i>Delete</button>
 
 								</form>
 							</td>
@@ -57,7 +57,7 @@
 		{% else %}
 			<p>No songs are currently available.</p>
 		{% endif %}
-		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-regular fa-file-audio"></i>Upload Songs</a>
+		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-solid fa-upload"></i>Upload Songs</a>
 
 	</div>
 {% endblock %}
