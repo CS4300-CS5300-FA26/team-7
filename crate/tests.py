@@ -313,6 +313,46 @@ class SongListViewTests(TestCase):
         self.assertNotContains(response, "<script>alert(1)</script>")
         self.assertContains(response, "&lt;script&gt;")
 
+# =============== PAGES TEST ================
+
+class PagesTest(TestCase):
+    PAGES = [
+        ("playlists", "crate/playlists.html"),
+        ("recommendations", "crate/recommendations.html"),
+        ("my_account", "crate/my_account.html"),
+    ]
+ 
+    def setUp(self):
+        self.user = User.objects.create_user("alice", password=STRONG_PASSWORD)
+ 
+    def test_pages_require_login(self):
+        for name, _ in self.PAGES:
+            with self.subTest(page=name):
+                url = reverse(name)
+                response = self.client.get(url)
+                self.assertRedirects(response, f"{reverse('login')}?next={url}")
+ 
+    def test_pages_render_for_logged_in_user(self):
+        self.client.force_login(self.user)
+        for name, template in self.PAGES:
+            with self.subTest(page=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+                self.assertTemplateUsed(response, template)
+ 
+    def test_nav_links_shown_only_when_logged_in(self):
+        anon = self.client.get(reverse("home"))
+        for name, _ in self.PAGES:
+            self.assertNotContains(anon, f'href="{reverse(name)}"')
+        self.client.force_login(self.user)
+        authed = self.client.get(reverse("home"))
+        for name, _ in self.PAGES:
+            with self.subTest(page=name):
+                self.assertContains(authed, f'href="{reverse(name)}"')
+        self.assertContains(authed, f'href="{reverse("song_list")}"')
+ 
+
+
  
 # ============ END-TO-END FLOW ==============
  
@@ -332,3 +372,4 @@ class AuthFlowIntegrationTests(TestCase):
         # Log back in -> access restored
         self.client.post(reverse("login"), {"username": "flow", "password": STRONG_PASSWORD})
         self.assertEqual(self.client.get(reverse("song_list")).status_code, 200)
+
