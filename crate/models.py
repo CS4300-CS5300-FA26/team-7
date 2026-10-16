@@ -2,7 +2,6 @@ from django.db import models
 from django.conf import settings
 
 class Song(models.Model):
-
     title = models.CharField(max_length=200)
     artist = models.CharField(max_length=200)
     genre = models.CharField(max_length=200, blank=True)
@@ -14,9 +13,10 @@ class Song(models.Model):
         on_delete=models.CASCADE,
         related_name='songs'  # Allows you to query: user.songs.all()
     )'''
-    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    minutes = models.PositiveIntegerField(null=True, blank=True)
+    seconds = models.PositiveIntegerField(null=True, blank=True)
+        
     audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} — {self.artist}"
-

@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from crate.models import Song
 from .forms import SongForm
+import mutagen
 
 # we will use this when setting up authentication through Django accounts
 from django.contrib.auth.decorators import login_required
@@ -47,10 +48,21 @@ def recommendations(request):
 def upload_song(request):
     if request.method == 'POST':
         form = SongForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('song_list')
+        try:
+            #set duration
+            uploaded_file = request.FILES['audio_file']
+            duration_in_seconds = mutagen.File(uploaded_file).info.length
+            form.instance.minutes = duration_in_seconds // 60
+            form.instance.seconds = duration_in_seconds % 60
+            
+            print(f"Song is {form.instance.minutes}:{form.instance.seconds} long")
+            if form.is_valid():
+                form.save()
+                return redirect('song_list')
+        except Exception as e:
+            print(f"Could not parse audio metadata: {e}")
 
     else:
         form = SongForm()
     return render(request, 'crate/upload_song.html', {'form': form})
+

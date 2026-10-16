@@ -22,7 +22,8 @@ class SongModelTests(TestCase):
         self.assertEqual(song.genre, "")
         self.assertEqual(song.album, "")
         self.assertEqual(song.audio_file, "")
-        self.assertIsNone(song.duration_seconds)
+        self.assertIsNone(song.minutes)
+        self.assertIsNone(song.seconds)
  
     def test_all_fields_are_saved(self):
         song = Song.objects.create(
@@ -31,16 +32,18 @@ class SongModelTests(TestCase):
             genre="Jazz",
             album="Kind of Blue",
             audio_file="media/kindofblue.mp3",
-            duration_seconds=562,
+            minutes=9,
+            seconds=22,
         )
         song.refresh_from_db()
         self.assertEqual(song.genre, "Jazz")
         self.assertEqual(song.album, "Kind of Blue")
         self.assertEqual(song.audio_file, "media/kindofblue.mp3")
-        self.assertEqual(song.duration_seconds, 562)
+        self.assertEqual(song.minutes, 9)
+        self.assertEqual(song.seconds, 22)
  
     def test_duration_must_be_non_negative(self):
-        song = Song(title="Bad", artist="Artist", duration_seconds=-5)
+        song = Song(title="Bad", artist="Artist", minutes=-5, seconds=-5)
         with self.assertRaises(Exception):
             song.full_clean()
  
@@ -285,7 +288,7 @@ class SongListViewTests(TestCase):
  
     def test_lists_all_songs(self):
         Song.objects.create(
-            title="So What", artist="Miles Davis", genre="Jazz", duration_seconds=562
+            title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22
         ) 
         Song.objects.create(title="Africa", artist="Toto", genre="Rock")
         self.client.force_login(self.user)
@@ -294,7 +297,7 @@ class SongListViewTests(TestCase):
         self.assertContains(response, "So What")
         self.assertContains(response, "Miles Davis")
         self.assertContains(response, "Jazz")
-        self.assertContains(response, "562 seconds")
+        self.assertContains(response, "9:22")
         self.assertContains(response, "Africa")
         self.assertNotContains(response, "No songs are currently available.")
  

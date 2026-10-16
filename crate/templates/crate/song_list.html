@@ -30,13 +30,15 @@
 							<td>{{ song.title }} - {{ song.artist }}</td>
 							<td>{{ song.artist }}</td>
 							<td>{{ song.genre }}</td>
-							<td>{{ song.duration_seconds }} seconds</td>
-							<td>						<div>
-							<audio controls>
-								<source src="{{ song.audio_file.url }}" type="audio/mpeg">
-								Your browser does not support the audio element.
-							</audio>
-						</div></td>
+							<td>{{ song.minutes }}:{{ song.seconds }} </td>
+							<td>						
+								<div>
+								<audio controls>
+									<source src="{{ song.audio_file.url }}" type="audio/mpeg">
+									Your browser does not support the audio element.
+								</audio>
+								</div>
+							</td>
 						</tr>
 					{% endfor %}
 				</tbody>
