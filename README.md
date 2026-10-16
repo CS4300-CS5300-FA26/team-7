@@ -10,7 +10,7 @@ CS 4300/5300 Fall 2026 — Team 7 group project
 - Sprint 0-3: Claude - Assisted with Deployment setup and Configuration.
 
 - Sprint 1: Claude - Assisted with playlist model, views, and html page
-- Sprint 1: Claude - Assisted with automatic metadata pulling on the song upload page
+- Sprint 1: Claude - Assisted with automatic metadata pulling on the song upload page and tests thereof
 
 ## Dev Guide To Run The App
 - Make sure you are in the team-7 Directory

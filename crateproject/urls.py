@@ -34,7 +34,6 @@ urlpatterns = [
     path('playlists/', views.playlists, name='playlists'),
     path('playlists/create/', views.create_playlist, name='create_playlist'),
  
-
     #For user authentication
     path('accounts/', include('django.contrib.auth.urls')),
     # Custom signup URL
