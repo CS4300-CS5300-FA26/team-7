@@ -26,12 +26,29 @@
 				<!-- Body for the table: displays content for each song entity -->
 				<tbody>
 					{% for song in songs %}
+						{% if song.audio_file %}
 						<tr>
-							<td>{{ song.title }}</td>
+							<td>{{ song.title }} - {{ song.artist }}</td>
 							<td>{{ song.artist }}</td>
 							<td>{{ song.genre }}</td>
-							<td>{{ song.duration_seconds }} seconds</td>
+							<td>{{ song.minutes }}:{{ song.seconds|stringformat:"02d" }} </td>
+							<td>						
+								<div>
+									<audio controls>
+										<source src="{{ song.audio_file.url }}">
+										Your browser does not support the audio element.
+									</audio>
+								</div>
+							</td>
+							<td>
+            					<form action="{% url 'song_delete' song.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete &quot;{{ song.title }}&quot;?');">
+									{% csrf_token %}
+					                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-can"></i>Delete</button>
+
+								</form>
+							</td>
 						</tr>
+						{% endif %}
 					{% endfor %}
 				</tbody>
 			</table>
@@ -40,5 +57,17 @@
 		{% else %}
 			<p>No songs are currently available.</p>
 		{% endif %}
+		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-solid fa-upload"></i>Upload Songs</a>
+
 	</div>
+	<script>
+    // Only one song plays at a time: when any player starts, pause all the others.
+    // "play" events don't bubble, so this listens during the capture phase on document.
+    document.addEventListener('play', function (event) {
+        if (!(event.target instanceof HTMLAudioElement)) { return; }
+        document.querySelectorAll('audio').forEach(function (audio) {
+            if (audio !== event.target && !audio.paused) { audio.pause(); }
+        });
+    }, true);
+</script>
 {% endblock %}
