@@ -624,3 +624,106 @@ class UploadPageAutofillWiringTests(TestCase):
         response = self.client.get(reverse("upload_song"))
         self.assertContains(response, "csrfmiddlewaretoken")
  
+# ============ Account Page Tests ==============
+
+# Imports already in your file: TestCase, get_user_model, SESSION_KEY, reverse
+User = get_user_model()  # skip this line if your file already defines it
+
+
+class ChangePasswordTests(TestCase):
+    def setUp(self):
+        self.old_password = 'oldpass123!'
+        self.new_password = 'newpass123'
+        self.user = User.objects.create_user(
+            username='tester', password=self.old_password
+        )
+        self.client.login(username='tester', password=self.old_password)
+        self.url = reverse('my_account')
+
+    def post_change(self, current, new1, new2, **kwargs):
+        return self.client.post(self.url, {
+            'old_password': current,
+            'new_password1': new1,
+            'new_password2': new2,
+        }, **kwargs)
+
+    def assert_logged_in(self):
+        self.assertEqual(self.client.session[SESSION_KEY], str(self.user.pk))
+
+    # Access
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('login', response.url)
+        self.assertNotIn(SESSION_KEY, self.client.session)
+
+    # Scenario 1: opening the change-password form
+    def test_account_page_shows_change_password_link(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Change Password')
+        self.assertIsNone(response.context['form'])
+
+    def test_change_password_form_has_three_fields(self):
+        response = self.client.get(self.url + '?change_password=1')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="old_password"')
+        self.assertContains(response, 'name="new_password1"')
+        self.assertContains(response, 'name="new_password2"')
+
+    # Scenario 2: changing the password successfully
+    def test_password_changed_successfully(self):
+        response = self.post_change(
+            self.old_password, self.new_password, self.new_password
+        )
+        self.assertRedirects(response, self.url)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.new_password))
+        self.assertFalse(self.user.check_password(self.old_password))
+
+    def test_success_shows_confirmation_message(self):
+        response = self.post_change(
+            self.old_password, self.new_password, self.new_password,
+            follow=True,
+        )
+        self.assertContains(response, 'Your password has been updated.')
+
+    def test_user_stays_logged_in_after_change(self):
+        self.post_change(self.old_password, self.new_password, self.new_password)
+        self.assert_logged_in()
+
+    # Scenario 3: new passwords do not match
+    def test_mismatched_passwords_not_updated(self):
+        response = self.post_change(
+            self.old_password, 'newpass123', 'newpass124'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.old_password))
+        self.assertFalse(self.user.check_password('newpass123'))
+
+    def test_mismatched_passwords_show_error(self):
+        response = self.post_change(
+            self.old_password, 'newpass123', 'newpass124'
+        )
+        form = response.context['form']
+        self.assertEqual(
+            form.errors['new_password2'].as_data()[0].code,
+            'password_mismatch',
+        )
+        self.assertContains(response, 'match')
+
+    def test_mismatched_passwords_keep_user_logged_in(self):
+        self.post_change(self.old_password, 'newpass123', 'newpass124')
+        self.assert_logged_in()
+
+    # Extra: wrong current password
+    def test_wrong_current_password_not_updated(self):
+        response = self.post_change(
+            'wrongpass', self.new_password, self.new_password
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('old_password', response.context['form'].errors)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.old_password))
