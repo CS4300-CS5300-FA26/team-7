@@ -2,29 +2,42 @@
 {% extends "crate/base.html" %}
 
 <!-- Account page with optional change-password form -->
+ <!--Block content is where all the data will be displayed in base.html-->
 {% block content %}
+    <!--Bootstrap container-->
 	<div class="container mt-5">
         <h1>My Account</h1>
 
+        <!--When the user submits the form, the success message is printed-->
         {% for message in messages %}
             <div class="alert alert-success">{{ message }}</div>
         {% endfor %}
 
+        <!--Enter if a form has been passed-->
         {% if form %}
+            <!--Starts the POST form-->
             <form method="post" action="{% url 'my_account' %}" class="mt-4">
                 {% csrf_token %}
+
+                <!--For each field: old password, new password, new password confirmation Display the field-->
                 {% for field in form %}
                     <div class="mb-3">
+                        <!--Label of the field-->
                         {{ field.label_tag }}
+                        <!--renders the input box-->
                         {{ field }}
+                        <!--if user entry is wrong displays the error-->
                         {% for error in field.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
                 {% endfor %}
+                <!--When clicked sends the POST request to the view-->
                 <button type="submit" class="btn btn-primary">Submit</button>
             </form>
+        <!--when no form is started view the normal account page-->
         {% else %}
+            <!--query parameter on a GET request and creates an empty form-->
             <a href="{% url 'my_account' %}?change_password=1" class="btn btn-primary mt-3">Change Password</a>
         {% endif %}
     </div>
