@@ -33,6 +33,27 @@ urlpatterns = [
     
     path('playlists/', views.playlists, name='playlists'),
     path('playlists/create/', views.create_playlist, name='create_playlist'),
+
+    #For Adding song to playlist
+    path(
+        'songs/<int:song_id>/add-to-playlist/',
+        views.add_song_to_playlist,
+        name='add_song_to_playlist',
+    ),
+
+    #For Playlist detail
+    path(
+        'playlists/<int:playlist_id>/',
+        views.playlist_detail,
+        name='playlist_detail',
+    ),
+
+    #For Removing song from playlist
+    path(
+        'playlists/<int:playlist_id>/remove-song/<int:song_id>/',
+        views.remove_song_from_playlist,
+        name='remove_song_from_playlist',
+    ),
  
     #For user authentication
     path('accounts/', include('django.contrib.auth.urls')),

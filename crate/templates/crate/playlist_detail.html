@@ -1,0 +1,84 @@
+```html
+{% extends "crate/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <a href="{% url 'playlists' %}" class="btn btn-secondary mb-3">
+        <i class="fa-solid fa-arrow-left"></i> Back to Playlists
+    </a>
+
+    <h1>{{ playlist.name }}</h1>
+
+    <h3 class="mt-4">Songs in this Playlist</h3>
+
+    {% if songs %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for song in songs %}
+            <tr>
+                <td>{{ song.title }}</td>
+                <td>{{ song.artist }}</td>
+                <td>{{ song.album|default:"—" }}</td>
+                <td>
+                    <form method="post" action="{% url 'remove_song_from_playlist' playlist.id song.id %}"
+                        onsubmit="return confirm('Remove this song from the playlist?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-trash"></i> Remove
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>This playlist is empty. Add some songs below!</p>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <h3>Add Songs</h3>
+
+    {% if available_songs %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for song in available_songs %}
+            <tr>
+                <td>{{ song.title }}</td>
+                <td>{{ song.artist }}</td>
+                <td>
+                    <form method="post" action="{% url 'add_song_to_playlist' song.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="playlist_id" value="{{ playlist.id }}">
+                        <input type="hidden" name="next" value="playlist_detail">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>All available songs are already in this playlist.</p>
+    {% endif %}
+</div>
+{% endblock %}
+```
