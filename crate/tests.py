@@ -626,10 +626,6 @@ class UploadPageAutofillWiringTests(TestCase):
  
 # ============ Account Page Tests ==============
 
-# Imports already in your file: TestCase, get_user_model, SESSION_KEY, reverse
-User = get_user_model()  # skip this line if your file already defines it
-
-
 class ChangePasswordTests(TestCase):
     #Account setup for tests
     def setUp(self):
