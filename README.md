@@ -18,7 +18,7 @@ CS 4300/5300 Fall 2026 — Team 7 group project
 - Make sure you are in the team-7 Directory
 - Create and activate your virtual environment
 - Run "pip install -r requirements.txt"
-- Run $env:DJANGO_DEBUG="True"  
+- Run $env:DJANGO_DEBUG="True"  or export DJANGO_DEBUG=True if on linux
 - Run "python manage.py makemigrations"
 - Run "python manage.py migrate"
 - Run "python manage.py runserver"

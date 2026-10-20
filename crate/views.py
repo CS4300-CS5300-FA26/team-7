@@ -7,6 +7,13 @@ from django.views.decorators.http import require_POST
 from crate.models import Song, Playlist, read_audio_metadata
 from .forms import SongForm
 
+#Imports for my_account view
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.shortcuts import render, redirect
+
 # we will use this when setting up authentication through Django accounts
 from django.contrib.auth.decorators import login_required
 
@@ -120,10 +127,28 @@ def remove_song_from_playlist(request, playlist_id, song_id):
     #Returns user to playlist detail page
     return redirect('playlist_detail', playlist_id=playlist.id)
 
-# Renders the user's account page. Placeholder — no data wired up yet.
+# Renders the user's account page. Handles user password change
 @login_required
 def my_account(request):
-    return render(request, 'crate/my_account.html')
+    form = None
+    #If the user submits the form
+    if request.method == 'POST':
+        #using djangos builtin password change form for simple implimentation
+        form = PasswordChangeForm(request.user, request.POST)
+        #If the user enters valid current password, and new passwords
+        if form.is_valid():
+            #sets the password for the user
+            user = form.save()
+            update_session_auth_hash(request, user)  # keeps the user logged in
+            messages.success(request, 'Your password has been updated.')
+            #back to account page
+            return redirect('my_account')
+    #If not a POST
+    elif 'change_password' in request.GET:
+        #Display empty form
+        form = PasswordChangeForm(request.user)
+    # renders template and passes the form
+    return render(request, 'crate/my_account.html', {'form': form})
 
 # Renders the recommendations page. Placeholder — no data wired up yet.
 @login_required
