@@ -21,6 +21,9 @@
 						<th>Artist</th>
 						<th>Genre</th>
 						<th>Duration</th>
+						<th>Audio</th>
+						<th>Playlist</th>
+						<th>Action</th>
 					</tr>
 				</thead>
 				<!-- Body for the table: displays content for each song entity -->
@@ -38,6 +41,36 @@
 										<source src="{{ song.audio_file.url }}">
 										Your browser does not support the audio element.
 									</audio>
+								</div>
+							</td>
+							<td>
+								<button type="button" class="btn btn-outline-primary rounded-circle" style="width: 36px; height: 36px; padding: 0;"
+									title="Add to playlist"
+									onclick="document.getElementById('playlist-menu-{{ song.id }}').hidden = !document.getElementById('playlist-menu-{{ song.id }}').hidden">
+									<i class="fa-solid fa-plus"></i>
+								</button>
+							
+								<div id="playlist-menu-{{ song.id }}" hidden class="mt-2">
+									{% if playlists %}
+									{% for playlist in playlists %}
+										{% if song not in playlist.songs.all %}
+										<form method="post"
+										 	action="{% url 'add_song_to_playlist' song.id %}"
+											class="mb-1">
+											{% csrf_token %}
+											<input type="hidden" name="playlist_id" value="{{ playlist.id }}">
+											<input type="hidden" name="next" value="song_list">
+										
+											<button type="submit" class="btn btn-sm btn-light">
+												{{ playlist.name }}
+											</button>
+										</form>
+										{% endif %}
+									{% endfor %}
+									{% else %}
+									<small>No playlists yet.</small>
+									<a href="{% url 'playlists' %}">Create one</a>
+									{% endif %}
 								</div>
 							</td>
 							<td>
