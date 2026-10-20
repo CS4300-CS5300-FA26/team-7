@@ -8,7 +8,7 @@
 
         <button type="button" class="btn btn-primary mb-3"
             onclick="document.getElementById('createPlaylistDialog').showModal()">
-        Create Playlist
+        <i class="fa-solid fa-plus"></i>Create Playlist
         </button>
 
         {% if playlists %}
@@ -23,7 +23,11 @@
                 <tbody>
                     {% for playlist in playlists %}
                         <tr>
-                            <td>{{ playlist.name }}</td>
+                            <td>
+                                <a href="{% url 'playlist_detail' playlist.id %}">
+                                    {{ playlist.name }}
+                                </a>
+                            </td>
                             <td>
                                 {% for song in playlist.songs.all %}
                                     {{ song.title }}{% if not forloop.last %}, {% endif %}
