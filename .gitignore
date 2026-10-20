@@ -32,8 +32,5 @@ db.sqlite3
 .DS_Store
 Thumbs.db
 
-<<<<<<< HEAD
-=======
 #Uploaded audio 
->>>>>>> dc5b31920a5cb9a55e5ab68a1d913a6b014c35dd
 media/**
