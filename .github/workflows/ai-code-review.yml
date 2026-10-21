@@ -20,5 +20,5 @@ jobs:
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: "gpt-6"
+          model: "gpt-6-luna"
           exclude: "**/*.md" 
