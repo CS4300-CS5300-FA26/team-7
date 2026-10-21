@@ -29,7 +29,6 @@
 				<!-- Body for the table: displays content for each song entity -->
 				<tbody>
 					{% for song in songs %}
-						{% if song.audio_file %}
 						<tr>
 							<td>{{ song.title }} - {{ song.artist }}</td>
 							<td>{{ song.artist }}</td>
@@ -37,10 +36,14 @@
 							<td>{{ song.minutes }}:{{ song.seconds|stringformat:"02d" }} </td>
 							<td>						
 								<div>
+									{% if song.audio_file %}
 									<audio controls>
 										<source src="{{ song.audio_file.url }}">
 										Your browser does not support the audio element.
 									</audio>
+									{% else %}
+									<em>No audio file</em>
+									{% endif %}
 								</div>
 							</td>
 							<td>
@@ -81,7 +84,6 @@
 								</form>
 							</td>
 						</tr>
-						{% endif %}
 					{% endfor %}
 				</tbody>
 			</table>

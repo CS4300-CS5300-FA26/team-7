@@ -88,12 +88,16 @@ class Song(models.Model):
     genre = models.CharField(max_length=200, blank=True)
     album = models.CharField(max_length=200, blank=True)
  
-    #for when songs are tied to a specific user.  Will go way outside the scope of this branch
-    '''user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
+    # The user who uploaded the song. Users only ever see their own songs.
+    # (null=True so songs that existed before this field was added still load;
+    # songs with no owner are visible to nobody until an admin assigns one.)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='songs'  # Allows you to query: user.songs.all()
-    )'''
+        related_name='songs',  # lets you query: user.songs.all()
+        null=True,
+        blank=True,
+    )
     minutes = models.PositiveIntegerField(null=True, blank=True)
     seconds = models.PositiveIntegerField(null=True, blank=True)
         
@@ -134,9 +138,16 @@ class Song(models.Model):
  
 class Playlist(models.Model):
     name = models.CharField(max_length=200)
+    # The user who created the playlist. Users only ever see their own playlists.
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='playlists',
+        null=True,
+        blank=True,
+    )
     songs = models.ManyToManyField(Song, related_name='playlists', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
  
     def __str__(self):
         return self.name
- 
