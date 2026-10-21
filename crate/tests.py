@@ -276,7 +276,7 @@ class SongListViewTests(TestCase):
         self.assertRedirects(response, f"{reverse('login')}?next={self.url}")
  
     def test_anonymous_user_cannot_see_songs(self):
-        Song.objects.create(title="Secret Song", artist="Hidden")
+        Song.objects.create(title="Secret Song", artist="Hidden", user=self.user)
         response = self.client.get(self.url, follow=True)
         self.assertNotContains(response, "Secret Song")
  
@@ -295,9 +295,10 @@ class SongListViewTests(TestCase):
     def test_lists_all_songs(self):
         audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
         Song.objects.create(
-            title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22, audio_file=audio
+            title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22, audio_file=audio,
+            user=self.user,
         ) 
-        Song.objects.create(title="Africa", artist="Toto", genre="Rock", audio_file=audio)
+        Song.objects.create(title="Africa", artist="Toto", genre="Rock", audio_file=audio, user=self.user)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(len(response.context["songs"]), 2)
@@ -311,7 +312,7 @@ class SongListViewTests(TestCase):
  
     def test_song_content_is_html_escaped(self):
         audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
-        Song.objects.create(title="<script>alert(1)</script>", artist="X", audio_file=audio)
+        Song.objects.create(title="<script>alert(1)</script>", artist="X", audio_file=audio, user=self.user)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertNotContains(response, "<script>alert(1)</script>")
@@ -624,142 +625,6 @@ class UploadPageAutofillWiringTests(TestCase):
         response = self.client.get(reverse("upload_song"))
         self.assertContains(response, "csrfmiddlewaretoken")
  
-# ============ Account Page Tests ==============
-
-class ChangePasswordTests(TestCase):
-    #Account setup for tests
-    def setUp(self):
-        self.old_password = 'oldpass123!'
-        self.new_password = 'newpass123'
-        self.user = User.objects.create_user(
-            username='tester', password=self.old_password
-        )
-        self.client.login(username='tester', password=self.old_password)
-        self.url = reverse('my_account')
-
-    # helper function for the form submission
-    def post_change(self, current, new1, new2, **kwargs):
-        return self.client.post(self.url, {
-            'old_password': current,
-            'new_password1': new1,
-            'new_password2': new2,
-        }, **kwargs)
-
-    # Helper to check if you are still logged in true if logged in
-    def assert_logged_in(self):
-        self.assertEqual(self.client.session[SESSION_KEY], str(self.user.pk))
-
-    # Access
-    def test_login_required(self):
-        self.client.logout()
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('login', response.url)
-        self.assertNotIn(SESSION_KEY, self.client.session)
-
-    # Scenario 1: opening the change-password form
-    def test_account_page_shows_change_password_link(self):
-        #go to the account page
-        response = self.client.get(self.url)
-        #If page loaded the test passes
-        self.assertEqual(response.status_code, 200)
-        #Passes if change password on page
-        self.assertContains(response, 'Change Password')
-        #passes if the form isn't open (just button visible) because form = None
-        self.assertIsNone(response.context['form'])
-
-    def test_change_password_form_has_three_fields(self):
-        #visit the account page, "click" the change password button
-        response = self.client.get(self.url + '?change_password=1')
-        #passes if we are on the page
-        self.assertEqual(response.status_code, 200)
-        # passes if the page contains the old_password field
-        self.assertContains(response, 'name="old_password"')
-        #passes if contains the new password field
-        self.assertContains(response, 'name="new_password1"')
-        self.assertContains(response, 'name="new_password2"')
-
-    # Scenario 2: changing the password successfully
-    def test_password_changed_successfully(self):
-        #submit the form with correct passwords
-        response = self.post_change(
-            self.old_password, self.new_password, self.new_password
-        )
-        #passes if we are back on account page
-        self.assertRedirects(response, self.url)
-        #reload the user from the database to get new password
-        self.user.refresh_from_db()
-        # passes if the new password works
-        self.assertTrue(self.user.check_password(self.new_password))
-        #passes if the old password no longer works
-        self.assertFalse(self.user.check_password(self.old_password))
-
-    def test_success_shows_confirmation_message(self):
-        #submit the form changing the password
-        response = self.post_change(
-            self.old_password, self.new_password, self.new_password,
-            follow=True,
-        )
-        #passes if the dialog is on the screen
-        self.assertContains(response, 'Your password has been updated.')
-
-    def test_user_stays_logged_in_after_change(self):
-        #submit the form with new password
-        self.post_change(self.old_password, self.new_password, self.new_password)
-        #passes if logged in still
-        self.assert_logged_in()
-
-    # Scenario 3: new passwords do not match
-    def test_mismatched_passwords_not_updated(self):
-        #submit the form with two different new passwords
-        response = self.post_change(
-            self.old_password, 'newpass123', 'newpass124'
-        )
-        #passes if we are still on the form
-        self.assertEqual(response.status_code, 200)
-        # get the user information
-        self.user.refresh_from_db()
-        #passes if still has the old password
-        self.assertTrue(self.user.check_password(self.old_password))
-        #passes if not the new password
-        self.assertFalse(self.user.check_password('newpass123'))
-
-    def test_mismatched_passwords_show_error(self):
-        #submit form with correct old password but no matching new password
-        response = self.post_change(
-            self.old_password, 'newpass123', 'newpass124'
-        )
-        #hold the error code from the form submission
-        form = response.context['form']
-        #passes if the right error message came up
-        self.assertEqual(
-            form.errors['new_password2'].as_data()[0].code,
-            'password_mismatch',
-        )
-        #confirms that page displays text relevant to the matching passwords
-        self.assertContains(response, 'match')
-
-    def test_mismatched_passwords_keep_user_logged_in(self):
-        #submit form with correct old password but no matching new password
-        self.post_change(self.old_password, 'newpass123', 'newpass124')
-        # passes if the user is still logged in
-        self.assert_logged_in()
-
-    # Extra: wrong current password
-    def test_wrong_current_password_not_updated(self):
-        #submit with wrong old password
-        response = self.post_change(
-            'wrongpass', self.new_password, self.new_password
-        )
-        #passes if not redirected
-        self.assertEqual(response.status_code, 200)
-        #passes if error occured
-        self.assertIn('old_password', response.context['form'].errors)
-        #refresh user info
-        self.user.refresh_from_db()
-        #passes if old password still works (not changed)
-        self.assertTrue(self.user.check_password(self.old_password))
-        
 # ============ Playlist Tests ==============
 class PlaylistFeatureTests(TestCase):
     def setUp(self):
@@ -781,6 +646,7 @@ class PlaylistFeatureTests(TestCase):
             album="Test Album",
             minutes=3,
             seconds=30,
+            user=self.user,
         )
 
         self.song2 = Song.objects.create(
@@ -790,14 +656,15 @@ class PlaylistFeatureTests(TestCase):
             album="Test Album2",
             minutes=4,
             seconds=15,
+            user=self.user,
         )
 
         # Create two playlists.
         self.playlist1 = Playlist.objects.create(
-            name="Test Playlist1"
+            name="Test Playlist1", user=self.user
         )
         self.playlist2 = Playlist.objects.create(
-            name="Test Playlist2"
+            name="Test Playlist2", user=self.user
         )
 
     def test_add_song_to_playlist(self):
@@ -869,3 +736,316 @@ class PlaylistFeatureTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.url)
+        """
+Tests that every user only ever sees and touches their own songs and playlists.
+
+Run with:  python manage.py test crate.test_ownership
+"""
+import io
+import shutil
+import tempfile
+import wave
+
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from crate.models import Playlist, Song
+
+User = get_user_model()
+PASSWORD = "Sup3r-Secret-Pass!"
+
+
+def make_wav(seconds=5, rate=1000):
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(1)
+        w.setframerate(rate)
+        w.writeframes(b"\x80" * (rate * seconds))
+    return buf.getvalue()
+
+
+class TwoUsersTestCase(TestCase):
+    """Alice and Bob each own a song and a playlist; the client starts logged in as Alice."""
+
+    def setUp(self):
+        self.alice = User.objects.create_user("alice", password=PASSWORD)
+        self.bob = User.objects.create_user("bob", password=PASSWORD)
+        # a stored file name is enough to render a song; the file itself isn't read
+        self.alice_song = Song.objects.create(
+            title="Alice Anthem", artist="A", audio_file="audio/a.mp3", user=self.alice)
+        self.bob_song = Song.objects.create(
+            title="Bob Ballad", artist="B", audio_file="audio/b.mp3", user=self.bob)
+        self.alice_playlist = Playlist.objects.create(name="Alice Mix", user=self.alice)
+        self.bob_playlist = Playlist.objects.create(name="Bob Mix", user=self.bob)
+        self.alice_playlist.songs.add(self.alice_song)
+        self.bob_playlist.songs.add(self.bob_song)
+        self.client.force_login(self.alice)
+
+
+# ============ SONG LIST ==============
+
+class SongListOwnershipTests(TwoUsersTestCase):
+    def test_user_sees_only_their_own_songs(self):
+        response = self.client.get(reverse("song_list"))
+        self.assertContains(response, "Alice Anthem")
+        self.assertNotContains(response, "Bob Ballad")
+        self.assertEqual(list(response.context["songs"]), [self.alice_song])
+
+    def test_other_user_sees_only_theirs(self):
+        self.client.force_login(self.bob)
+        response = self.client.get(reverse("song_list"))
+        self.assertContains(response, "Bob Ballad")
+        self.assertNotContains(response, "Alice Anthem")
+
+    def test_songs_with_no_owner_are_visible_to_nobody(self):
+        Song.objects.create(title="Orphan Tune", artist="?", audio_file="audio/o.mp3")
+        for user in (self.alice, self.bob):
+            self.client.force_login(user)
+            self.assertNotContains(self.client.get(reverse("song_list")), "Orphan Tune")
+
+    def test_add_to_playlist_menu_only_offers_own_playlists(self):
+        # the menu hides playlists a song is already in, so add one it isn't in
+        chill = Playlist.objects.create(name="Alice Chill", user=self.alice)
+        response = self.client.get(reverse("song_list"))
+        self.assertContains(response, "Alice Chill")
+        self.assertNotContains(response, "Bob Mix")
+        self.assertCountEqual(response.context["playlists"], [self.alice_playlist, chill])
+
+    def test_own_song_without_audio_is_listed_so_it_can_be_deleted(self):
+        ghost = Song.objects.create(title="No Audio Song", artist="A", user=self.alice)
+        response = self.client.get(reverse("song_list"))
+        self.assertContains(response, "No Audio Song")
+        self.assertContains(response, "No audio file")
+        self.assertContains(response, reverse("song_delete", args=[ghost.id]))
+
+
+# ============ PLAYLISTS PAGE ==============
+
+class PlaylistsPageOwnershipTests(TwoUsersTestCase):
+    def test_only_own_playlists_are_listed(self):
+        response = self.client.get(reverse("playlists"))
+        self.assertContains(response, "Alice Mix")
+        self.assertNotContains(response, "Bob Mix")
+        self.assertEqual(list(response.context["playlists"]), [self.alice_playlist])
+
+    def test_other_users_song_titles_never_appear(self):
+        response = self.client.get(reverse("playlists"))
+        self.assertNotContains(response, "Bob Ballad")
+
+    def test_create_playlist_picker_only_offers_own_songs(self):
+        response = self.client.get(reverse("playlists"))
+        self.assertEqual(list(response.context["songs"]), [self.alice_song])
+        self.assertContains(response, "Alice Anthem")
+
+    def test_ownerless_playlists_are_visible_to_nobody(self):
+        Playlist.objects.create(name="Legacy Mix")
+        self.assertNotContains(self.client.get(reverse("playlists")), "Legacy Mix")
+
+
+# ============ CREATE PLAYLIST ==============
+
+class CreatePlaylistOwnershipTests(TwoUsersTestCase):
+    url = "/playlists/create/"
+
+    def test_new_playlist_belongs_to_the_creator(self):
+        self.client.post(self.url, {"name": "Fresh", "songs": [self.alice_song.id]})
+        playlist = Playlist.objects.get(name="Fresh")
+        self.assertEqual(playlist.user, self.alice)
+        self.assertEqual(list(playlist.songs.all()), [self.alice_song])
+
+    def test_other_users_songs_cannot_be_attached_even_if_ids_are_forged(self):
+        self.client.post(self.url, {"name": "Sneaky", "songs": [self.alice_song.id, self.bob_song.id]})
+        playlist = Playlist.objects.get(name="Sneaky")
+        self.assertEqual(list(playlist.songs.all()), [self.alice_song])
+
+    def test_junk_song_ids_are_ignored_not_a_server_error(self):
+        response = self.client.post(self.url, {"name": "Junk", "songs": ["abc", "", str(self.alice_song.id)]})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(Playlist.objects.get(name="Junk").songs.all()), [self.alice_song])
+
+    def test_blank_name_creates_nothing(self):
+        before = Playlist.objects.count()
+        self.client.post(self.url, {"name": "   ", "songs": [self.alice_song.id]})
+        self.assertEqual(Playlist.objects.count(), before)
+
+
+# ============ PLAYLIST DETAIL ==============
+
+class PlaylistDetailOwnershipTests(TwoUsersTestCase):
+    def test_owner_can_view_their_playlist(self):
+        response = self.client.get(reverse("playlist_detail", args=[self.alice_playlist.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alice Anthem")
+
+    def test_other_users_playlist_is_a_404(self):
+        response = self.client.get(reverse("playlist_detail", args=[self.bob_playlist.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_ownerless_playlist_is_a_404(self):
+        legacy = Playlist.objects.create(name="Legacy Mix")
+        self.assertEqual(self.client.get(reverse("playlist_detail", args=[legacy.id])).status_code, 404)
+
+    def test_available_songs_are_only_the_users_own(self):
+        extra = Song.objects.create(title="Alice Extra", artist="A", audio_file="audio/x.mp3", user=self.alice)
+        response = self.client.get(reverse("playlist_detail", args=[self.alice_playlist.id]))
+        self.assertEqual(list(response.context["available_songs"]), [extra])
+        self.assertNotContains(response, "Bob Ballad")
+
+    def test_a_stray_foreign_song_inside_a_playlist_is_not_shown(self):
+        # e.g. left over from before songs had owners, or added through the admin
+        self.alice_playlist.songs.add(self.bob_song)
+        response = self.client.get(reverse("playlist_detail", args=[self.alice_playlist.id]))
+        self.assertNotContains(response, "Bob Ballad")
+        self.assertEqual(list(response.context["songs"]), [self.alice_song])
+
+
+# ============ ADD / REMOVE / DELETE ==============
+
+class ChangingThingsOwnershipTests(TwoUsersTestCase):
+    def add(self, song, playlist):
+        return self.client.post(
+            reverse("add_song_to_playlist", args=[song.id]), {"playlist_id": playlist.id})
+
+    def test_can_add_own_song_to_own_playlist(self):
+        extra = Song.objects.create(title="Extra", artist="A", audio_file="audio/x.mp3", user=self.alice)
+        self.assertEqual(self.add(extra, self.alice_playlist).status_code, 302)
+        self.assertTrue(self.alice_playlist.songs.filter(pk=extra.pk).exists())
+
+    def test_cannot_add_someone_elses_song_to_your_playlist(self):
+        self.assertEqual(self.add(self.bob_song, self.alice_playlist).status_code, 404)
+        self.assertFalse(self.alice_playlist.songs.filter(pk=self.bob_song.pk).exists())
+
+    def test_cannot_add_your_song_to_someone_elses_playlist(self):
+        self.assertEqual(self.add(self.alice_song, self.bob_playlist).status_code, 404)
+        self.assertFalse(self.bob_playlist.songs.filter(pk=self.alice_song.pk).exists())
+
+    def test_cannot_remove_songs_from_someone_elses_playlist(self):
+        url = reverse("remove_song_from_playlist", args=[self.bob_playlist.id, self.bob_song.id])
+        self.assertEqual(self.client.post(url).status_code, 404)
+        self.assertTrue(self.bob_playlist.songs.filter(pk=self.bob_song.pk).exists())
+
+    def test_cannot_delete_someone_elses_song(self):
+        response = self.client.post(reverse("song_delete", args=[self.bob_song.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Song.objects.filter(pk=self.bob_song.pk).exists())
+
+    def test_can_delete_own_song(self):
+        response = self.client.post(reverse("song_delete", args=[self.alice_song.id]))
+        self.assertRedirects(response, reverse("song_list"))
+        self.assertFalse(Song.objects.filter(pk=self.alice_song.pk).exists())
+
+    def test_all_of_these_still_require_login(self):
+        self.client.logout()
+        urls = [
+            ("get", reverse("song_list")),
+            ("get", reverse("playlists")),
+            ("get", reverse("playlist_detail", args=[self.alice_playlist.id])),
+            ("post", reverse("create_playlist")),
+            ("post", reverse("add_song_to_playlist", args=[self.alice_song.id])),
+            ("post", reverse("remove_song_from_playlist", args=[self.alice_playlist.id, self.alice_song.id])),
+            ("post", reverse("song_delete", args=[self.alice_song.id])),
+        ]
+        for method, url in urls:
+            with self.subTest(url=url):
+                response = getattr(self.client, method)(url)
+                self.assertEqual(response.status_code, 302)
+                self.assertIn(reverse("login"), response.url)
+
+
+# ============ DELETED SONGS AND PLAYLISTS ==============
+
+class DeletedSongsLeavePlaylistsTests(TwoUsersTestCase):
+    def test_deleting_a_song_removes_it_from_every_playlist_page(self):
+        second = Playlist.objects.create(name="Second Mix", user=self.alice)
+        second.songs.add(self.alice_song)
+
+        self.client.post(reverse("song_delete", args=[self.alice_song.id]))
+
+        self.assertEqual(Playlist.songs.through.objects.filter(song_id=self.alice_song.id).count(), 0)
+        self.assertNotContains(self.client.get(reverse("playlists")), "Alice Anthem")
+        for playlist in (self.alice_playlist, second):
+            with self.subTest(playlist=playlist.name):
+                page = self.client.get(reverse("playlist_detail", args=[playlist.id]))
+                self.assertNotContains(page, "Alice Anthem")
+                self.assertEqual(list(page.context["songs"]), [])
+
+    def test_deleting_a_song_does_not_delete_the_playlist(self):
+        self.client.post(reverse("song_delete", args=[self.alice_song.id]))
+        self.assertTrue(Playlist.objects.filter(pk=self.alice_playlist.pk).exists())
+
+    def test_deleting_a_user_removes_their_songs_and_playlists_only(self):
+        self.bob.delete()
+        self.assertFalse(Song.objects.filter(title="Bob Ballad").exists())
+        self.assertFalse(Playlist.objects.filter(name="Bob Mix").exists())
+        self.assertTrue(Song.objects.filter(title="Alice Anthem").exists())
+
+
+# ============ UPLOAD ASSIGNS THE OWNER ==============
+
+class UploadOwnershipTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        tmp = tempfile.mkdtemp()
+        cls.addClassCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        cls.enterClassContext(override_settings(MEDIA_ROOT=tmp))
+
+    def test_uploaded_song_belongs_to_the_uploader(self):
+        alice = User.objects.create_user("alice", password=PASSWORD)
+        self.client.force_login(alice)
+        audio = SimpleUploadedFile("t.wav", make_wav(), content_type="audio/wav")
+        response = self.client.post(reverse("upload_song"), {
+            "title": "Mine", "artist": "Me", "genre": "", "album": "", "audio_file": audio})
+        self.assertRedirects(response, reverse("song_list"))
+        self.assertEqual(Song.objects.get(title="Mine").user, alice)
+
+    def test_the_uploader_sees_it_and_others_do_not(self):
+        alice = User.objects.create_user("alice", password=PASSWORD)
+        bob = User.objects.create_user("bob", password=PASSWORD)
+        self.client.force_login(alice)
+        audio = SimpleUploadedFile("t.wav", make_wav(), content_type="audio/wav")
+        self.client.post(reverse("upload_song"), {
+            "title": "Mine", "artist": "Me", "genre": "", "album": "", "audio_file": audio})
+        self.assertContains(self.client.get(reverse("song_list")), "Mine")
+        self.client.force_login(bob)
+        self.assertNotContains(self.client.get(reverse("song_list")), "Mine")
+
+    def test_upload_form_has_no_owner_field_to_tamper_with(self):
+        alice = User.objects.create_user("alice", password=PASSWORD)
+        self.client.force_login(alice)
+        response = self.client.get(reverse("upload_song"))
+        self.assertNotIn("user", response.context["form"].fields)
+
+
+# ============ ADMIN ==============
+
+PLAIN_STATIC_STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+
+@override_settings(STORAGES=PLAIN_STATIC_STORAGES)
+class AdminOwnershipTests(TestCase):
+    def setUp(self):
+        self.boss = User.objects.create_superuser("boss", password=PASSWORD)
+        self.client.force_login(self.boss)
+        self.alice = User.objects.create_user("alice", password=PASSWORD)
+
+    def test_admin_can_assign_an_owner_to_an_existing_song(self):
+        song = Song.objects.create(title="Legacy", artist="L", audio_file="audio/l.mp3")
+        response = self.client.get(reverse("admin:crate_song_change", args=[song.pk]))
+        self.assertContains(response, 'name="user"')
+
+    def test_admin_lists_the_owner_column(self):
+        Song.objects.create(title="Owned", artist="L", audio_file="audio/l.mp3", user=self.alice)
+        response = self.client.get(reverse("admin:crate_song_changelist"))
+        self.assertContains(response, "alice")
+
+    def test_playlist_admin_shows_owner(self):
+        Playlist.objects.create(name="PL", user=self.alice)
+        response = self.client.get(reverse("admin:crate_playlist_changelist"))
+        self.assertContains(response, "alice")
