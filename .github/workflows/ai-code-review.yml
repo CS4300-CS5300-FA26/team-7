@@ -1,8 +1,11 @@
 name: PR Agent
+
 on:
   pull_request:
     types: [opened, reopened, ready_for_review]
   issue_comment:
+    types: [created, edited]
+
 jobs:
   pr_agent_job:
     if: ${{ github.event.sender.type != 'Bot' }}
@@ -15,7 +18,10 @@ jobs:
       - name: PR Agent action step
         uses: the-pr-agent/pr-agent@main
         env:
+          # The key your professor gave you, stored as a repository secret.
           OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_MODEL: 'gpt-6-luna'
-          
+          # PR-Agent reads settings from env vars written as SECTION.KEY (with a dot).
+          CONFIG.MODEL: "gpt-6-luna"
+          # PR-Agent doesn't know newer models' limits, so it needs one for gpt-6-luna.
+          CONFIG.CUSTOM_MODEL_MAX_TOKENS: "128000"
