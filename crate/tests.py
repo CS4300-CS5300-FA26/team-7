@@ -753,10 +753,6 @@ from django.urls import reverse
 
 from crate.models import Playlist, Song
 
-User = get_user_model()
-PASSWORD = "Sup3r-Secret-Pass!"
-
-
 def make_wav(seconds=5, rate=1000):
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
@@ -771,8 +767,8 @@ class TwoUsersTestCase(TestCase):
     """Alice and Bob each own a song and a playlist; the client starts logged in as Alice."""
 
     def setUp(self):
-        self.alice = User.objects.create_user("alice", password=PASSWORD)
-        self.bob = User.objects.create_user("bob", password=PASSWORD)
+        self.alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
+        self.bob = User.objects.create_user("bob", password=STRONG_PASSWORD)
         # a stored file name is enough to render a song; the file itself isn't read
         self.alice_song = Song.objects.create(
             title="Alice Anthem", artist="A", audio_file="audio/a.mp3", user=self.alice)
@@ -994,7 +990,7 @@ class UploadOwnershipTests(TestCase):
         cls.enterClassContext(override_settings(MEDIA_ROOT=tmp))
 
     def test_uploaded_song_belongs_to_the_uploader(self):
-        alice = User.objects.create_user("alice", password=PASSWORD)
+        alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
         self.client.force_login(alice)
         audio = SimpleUploadedFile("t.wav", make_wav(), content_type="audio/wav")
         response = self.client.post(reverse("upload_song"), {
@@ -1003,8 +999,8 @@ class UploadOwnershipTests(TestCase):
         self.assertEqual(Song.objects.get(title="Mine").user, alice)
 
     def test_the_uploader_sees_it_and_others_do_not(self):
-        alice = User.objects.create_user("alice", password=PASSWORD)
-        bob = User.objects.create_user("bob", password=PASSWORD)
+        alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
+        bob = User.objects.create_user("bob", password=STRONG_PASSWORD)
         self.client.force_login(alice)
         audio = SimpleUploadedFile("t.wav", make_wav(), content_type="audio/wav")
         self.client.post(reverse("upload_song"), {
@@ -1014,7 +1010,7 @@ class UploadOwnershipTests(TestCase):
         self.assertNotContains(self.client.get(reverse("song_list")), "Mine")
 
     def test_upload_form_has_no_owner_field_to_tamper_with(self):
-        alice = User.objects.create_user("alice", password=PASSWORD)
+        alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
         self.client.force_login(alice)
         response = self.client.get(reverse("upload_song"))
         self.assertNotIn("user", response.context["form"].fields)
@@ -1031,9 +1027,9 @@ PLAIN_STATIC_STORAGES = {
 @override_settings(STORAGES=PLAIN_STATIC_STORAGES)
 class AdminOwnershipTests(TestCase):
     def setUp(self):
-        self.boss = User.objects.create_superuser("boss", password=PASSWORD)
+        self.boss = User.objects.create_superuser("boss", password=STRONG_PASSWORD)
         self.client.force_login(self.boss)
-        self.alice = User.objects.create_user("alice", password=PASSWORD)
+        self.alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
 
     def test_admin_can_assign_an_owner_to_an_existing_song(self):
         song = Song.objects.create(title="Legacy", artist="L", audio_file="audio/l.mp3")
