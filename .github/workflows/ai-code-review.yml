@@ -18,7 +18,7 @@ jobs:
       - name: Run AI Code Review
         uses: villesau/ai-codereviewer@v2.7.0 
         with:
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: "gpt-6-luna"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_MODEL: "gpt-6-luna"
           exclude: "**/*.md" 
