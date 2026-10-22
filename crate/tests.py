@@ -1,12 +1,18 @@
 import io, json, os, tempfile, struct, shutil, wave
+
 from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model, SESSION_KEY
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
+
 from mutagen.easyid3 import EasyID3
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TALB, TCON, TIT2, TPE1
+
+from unittest.mock import patch
+
+from cloudinary_storage.storage import VideoMediaCloudinaryStorage
 
 from crate.models import Song, read_audio_metadata, Playlist
  
@@ -291,8 +297,9 @@ class SongListViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "No songs are currently available.")
         self.assertEqual(len(response.context["songs"]), 0)
- 
-    def test_lists_all_songs(self):
+
+    @patch("cloudinary.uploader.upload", return_value={"public_id": "audio/test"})
+    def test_lists_all_songs(self, mock_upload):
         audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
         Song.objects.create(
             title="So What", artist="Miles Davis", genre="Jazz", minutes=9, seconds=22, audio_file=audio,
@@ -309,8 +316,8 @@ class SongListViewTests(TestCase):
         self.assertContains(response, "Africa")
         self.assertNotContains(response, "No songs are currently available.")
         
- 
-    def test_song_content_is_html_escaped(self):
+    @patch("cloudinary.uploader.upload", return_value={"public_id": "audio/test"})
+    def test_song_content_is_html_escaped(self, mock_upload):
         audio = SimpleUploadedFile("test.mp3", b"fake audio bytes", content_type="audio/mpeg")
         Song.objects.create(title="<script>alert(1)</script>", artist="X", audio_file=audio, user=self.user)
         self.client.force_login(self.user)
@@ -978,7 +985,8 @@ class UploadOwnershipTests(TestCase):
         cls.addClassCleanup(shutil.rmtree, tmp, ignore_errors=True)
         cls.enterClassContext(override_settings(MEDIA_ROOT=tmp))
 
-    def test_uploaded_song_belongs_to_the_uploader(self):
+    @patch("cloudinary.uploader.upload", return_value={"public_id": "audio/test"})
+    def test_uploaded_song_belongs_to_the_uploader(self, mock_upload):
         alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
         self.client.force_login(alice)
         audio = SimpleUploadedFile("t.wav", make_wav(), content_type="audio/wav")
@@ -987,7 +995,8 @@ class UploadOwnershipTests(TestCase):
         self.assertRedirects(response, reverse("song_list"))
         self.assertEqual(Song.objects.get(title="Mine").user, alice)
 
-    def test_the_uploader_sees_it_and_others_do_not(self):
+    @patch("cloudinary.uploader.upload", return_value={"public_id": "audio/test"})
+    def test_the_uploader_sees_it_and_others_do_not(self, mock_upload):
         alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
         bob = User.objects.create_user("bob", password=STRONG_PASSWORD)
         self.client.force_login(alice)
@@ -1034,3 +1043,30 @@ class AdminOwnershipTests(TestCase):
         Playlist.objects.create(name="PL", user=self.alice)
         response = self.client.get(reverse("admin:crate_playlist_changelist"))
         self.assertContains(response, "alice")
+
+# ============ CLOUDINARY STORAGE ==============
+class AudioStorageWiringTests(TestCase):
+    """The audio_file field must be wired to Cloudinary's video storage."""
+
+    def test_audio_file_uses_cloudinary_video_storage(self):
+        storage = Song._meta.get_field("audio_file").storage
+        self.assertIsInstance(storage, VideoMediaCloudinaryStorage)
+
+    def test_audio_stored_as_video_resource_type(self):
+        storage = Song._meta.get_field("audio_file").storage
+        self.assertEqual(storage.RESOURCE_TYPE, "video")
+
+class AudioUploadRoutingTests(TestCase):
+    """Saving a Song with audio should upload to Cloudinary, not the local disk."""
+
+    @patch("cloudinary.uploader.upload")
+    def test_saving_audio_uploads_to_cloudinary_as_video(self, mock_upload):
+        mock_upload.return_value = {"public_id": "audio/test-track"}
+        user = User.objects.create_user("alice", password="Sup3r-Secret-Pass!")
+        audio = SimpleUploadedFile("track.mp3", b"\xff\xfb\x90\x00fake", content_type="audio/mpeg")
+        song = Song.objects.create(title="T", artist="A", audio_file=audio, user=user)
+
+        self.assertTrue(mock_upload.called)
+        self.assertEqual(mock_upload.call_args.kwargs["resource_type"], "video")
+        self.assertIn("res.cloudinary.com", song.audio_file.url)
+        self.assertIn("/video/", song.audio_file.url)
