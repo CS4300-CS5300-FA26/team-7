@@ -127,9 +127,28 @@ def remove_song_from_playlist(request, playlist_id, song_id):
     return redirect('playlist_detail', playlist_id=playlist.id)
 
 # Renders the user's account page. Placeholder — no data wired up yet.
+# Renders the user's account page. Handles user password change
 @login_required
 def my_account(request):
-    return render(request, 'crate/my_account.html')
+    form = None
+    #If the user submits the form
+    if request.method == 'POST':
+        #using djangos builtin password change form for simple implimentation
+        form = PasswordChangeForm(request.user, request.POST)
+        #If the user enters valid current password, and new passwords
+        if form.is_valid():
+            #sets the password for the user
+            user = form.save()
+            update_session_auth_hash(request, user)  # keeps the user logged in
+            messages.success(request, 'Your password has been updated.')
+            #back to account page
+            return redirect('my_account')
+    #If not a POST
+    elif 'change_password' in request.GET:
+        #Display empty form
+        form = PasswordChangeForm(request.user)
+    # renders template and passes the form
+    return render(request, 'crate/my_account.html', {'form': form})
 
 # Renders the recommendations page. Placeholder — no data wired up yet.
 @login_required
