@@ -5,4 +5,7 @@ whitenoise
 dj-database-url
 psycopg2-binary
 mutagen>=1.47.0
+cloudinary
+django-cloudinary-storage
+python-dotenv
 coverage

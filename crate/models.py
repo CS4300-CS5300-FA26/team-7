@@ -1,8 +1,12 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+
 import mutagen
 from mutagen.easyid3 import EasyID3
-from django.core.exceptions import ValidationError
+
+from cloudinary_storage.storage import VideoMediaCloudinaryStorage
+
 from enum import Enum
  
  
@@ -101,7 +105,7 @@ class Song(models.Model):
     minutes = models.PositiveIntegerField(null=True, blank=True)
     seconds = models.PositiveIntegerField(null=True, blank=True)
         
-    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True)
+    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True, storage=VideoMediaCloudinaryStorage())
  
     def __str__(self):
         return f"{self.title} — {self.artist}"
