@@ -8,3 +8,4 @@ mutagen>=1.47.0
 cloudinary
 django-cloudinary-storage
 python-dotenv
+coverage
