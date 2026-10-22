@@ -34,3 +34,6 @@ Thumbs.db
 
 #Uploaded audio 
 media/**
+
+#coverage tests
+.coverage
