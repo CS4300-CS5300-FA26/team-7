@@ -105,7 +105,7 @@ class Song(models.Model):
     minutes = models.PositiveIntegerField(null=True, blank=True)
     seconds = models.PositiveIntegerField(null=True, blank=True)
         
-    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True, storage=VideoMediaCloudinaryStorage)
+    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True, storage=VideoMediaCloudinaryStorage())
  
     def __str__(self):
         return f"{self.title} — {self.artist}"
