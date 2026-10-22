@@ -25,6 +25,8 @@ jobs:
           pip install coverage
 
       - name: Run coverage tests
+        env:
+          CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
         run: |
           coverage run manage.py test
           coverage report -m --fail-under=80
