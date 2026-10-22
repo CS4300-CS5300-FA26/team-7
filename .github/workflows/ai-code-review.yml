@@ -1,0 +1,25 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  pr_agent_job:
+    if: ${{ github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: PR Agent action step
+        uses: the-pr-agent/pr-agent@a3bdec38cdb98736ab1f8be067c507bbdce954bc
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFIG.MODEL: "gpt-6-luna"
+          # PR-Agent doesn't know newer models' limits, so it needs one for gpt-6-luna.
+          CONFIG.CUSTOM_MODEL_MAX_TOKENS: "128000"
