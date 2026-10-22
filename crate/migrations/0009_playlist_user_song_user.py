@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
  
     dependencies = [
-        ('crate', '0007_merge_20261016_0544'),
+        ('crate', '0008_alter_song_audio_file.py'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
  
