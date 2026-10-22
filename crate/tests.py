@@ -1,5 +1,5 @@
-import io, json, os, tempfile, struct
-from django.test import TestCase
+import io, json, os, tempfile, struct, shutil, wave
+from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model, SESSION_KEY
 from django.contrib.auth.forms import UserCreationForm
@@ -7,6 +7,8 @@ from django.urls import reverse
 from mutagen.easyid3 import EasyID3
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TALB, TCON, TIT2, TPE1
+
+
 
 from crate.models import Song, read_audio_metadata, Playlist
  
@@ -736,22 +738,8 @@ class PlaylistFeatureTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.url)
-        """
-Tests that every user only ever sees and touches their own songs and playlists.
-
-Run with:  python manage.py test crate.test_ownership
-"""
-import io
-import shutil
-import tempfile
-import wave
-
-from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
-from django.urls import reverse
-
-from crate.models import Playlist, Song
+   
+        
 
 def make_wav(seconds=5, rate=1000):
     buf = io.BytesIO()
