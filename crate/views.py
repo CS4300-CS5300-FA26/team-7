@@ -7,6 +7,14 @@ from django.views.decorators.http import require_POST
 from crate.models import Song, Playlist, read_audio_metadata
 from .forms import SongForm
 
+#Imports for my_account view
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.shortcuts import render, redirect
+
+
 # we will use this when setting up authentication through Django accounts
 from django.contrib.auth.decorators import login_required
 
