@@ -1,5 +1,5 @@
-import io, json, os, tempfile, struct
-from django.test import TestCase
+import io, json, os, tempfile, struct, shutil, wave
+from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model, SESSION_KEY
 from django.contrib.auth.forms import UserCreationForm
@@ -739,19 +739,8 @@ class PlaylistFeatureTests(TestCase):
         """
 Tests that every user only ever sees and touches their own songs and playlists.
 
-Run with:  python manage.py test crate.test_ownership
+
 """
-import io
-import shutil
-import tempfile
-import wave
-
-from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
-from django.urls import reverse
-
-from crate.models import Playlist, Song
 
 def make_wav(seconds=5, rate=1000):
     buf = io.BytesIO()
