@@ -28,3 +28,4 @@ jobs:
       env:
         CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
       run: python manage.py test
+

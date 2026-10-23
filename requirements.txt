@@ -9,3 +9,4 @@ cloudinary
 django-cloudinary-storage
 python-dotenv
 coverage
+behave-django
