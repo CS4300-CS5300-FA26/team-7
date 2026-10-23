@@ -71,7 +71,7 @@ class HomeViewTests(TestCase):
     def test_home_anonymous_shows_login_and_signup_links(self):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "home.html")
+        self.assertTemplateUsed(response, "crate/home.html")
         self.assertContains(response, "You are not logged in.")
         self.assertContains(response, reverse("login"))
         self.assertContains(response, reverse("signup"))
