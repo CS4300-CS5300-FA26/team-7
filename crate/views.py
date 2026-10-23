@@ -21,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 # ============ VIEWS ==============
 
 def home_view(request):
-    return render(request, 'home.html')
+    return render(request, 'crate/home.html')
 
 # Handles new-user registration.
 # On POST: validates the submitted signup form; if valid, creates the user,
