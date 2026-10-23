@@ -13,6 +13,8 @@ CS 4300/5300 Fall 2026 — Team 7 group project
 - Sprint 1: Claude - Assisted with playlist model, views, and html page
 - Sprint 1: Claude - Assisted with automatic metadata pulling on the song upload page and tests thereof
 - Sprint 1: Claude - Helped assign songs to individual users
+- Sprint 1: Claude - Helped with Cloudinary Wiring, and Testing.
+- Sprint 1: Claude - Helped with Behave Tests.
 
 ## Dev Guide To Run The App
 
