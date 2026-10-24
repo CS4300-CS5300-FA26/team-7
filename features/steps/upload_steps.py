@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse 
 
 from crate.models import Song 
-from crate.tests import make_wav    # reuse the valid-WAV generator
+from crate.tests.helpers import make_wav    # reuse the valid-WAV generator
 
 User = get_user_model()
 
