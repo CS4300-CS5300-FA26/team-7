@@ -3,7 +3,7 @@
 
 Crate is an online personal audio storage platform where you can store (copyright-free) media and access it anywhere.
 
-[![Django CI](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml)
+[![Django Tests](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml)
 [![Coverage](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/coverage.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/coverage.yml)
 [![Behave Tests](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/behave-tests.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/behave-tests.yml)
 
