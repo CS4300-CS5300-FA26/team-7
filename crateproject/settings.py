@@ -27,9 +27,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-e7pnque^&mqnuz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "") == "True"
 
-ALLOWED_HOSTS = [".herokuapp.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [".herokuapp.com", "www.crate-music.app", "crate-music.app", "localhost", "127.0.0.1"]
 
-CSRF_TRUSTED_ORIGINS = ["https://www.yourdomain.dev", "https://yourdomain.dev"]
+CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app", "https://crate-music.app"]
 
 
 # Application definition
