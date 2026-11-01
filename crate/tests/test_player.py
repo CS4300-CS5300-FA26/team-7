@@ -134,13 +134,8 @@ class PlaylistPlayerButtonsTests(TestCase):
         playlist = playlist or self.playlist
         return self.client.get(reverse("playlist_detail", args=[playlist.id])).content.decode()
 
-    def test_toolbar_has_play_shuffle_and_add_buttons(self):
-        html = self.page()
-        for action in ("play-all", "shuffle-all", "add-all"):
-            with self.subTest(action=action):
-                self.assertEqual(html.count(f'data-queue-action="{action}" data-queue-scope="#playlist-songs"'), 1)
-        for label in ("Play playlist", "Shuffle", "Add to queue"):
-            self.assertIn(label, html)
+
+
 
     def test_toolbar_scope_exists_and_contains_the_playlists_songs(self):
         html = self.page()

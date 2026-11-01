@@ -64,7 +64,7 @@
         <button type="button" id="player-prev" class="btn btn-outline-light" aria-label="Previous song" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
         <audio id="player" controls preload="metadata" style="flex: 3 1 240px; min-width: 200px; height: 40px;"></audio>
         <button type="button" id="player-next" class="btn btn-outline-light" aria-label="Next song" title="Next"><i class="fa-solid fa-forward-step"></i></button>
-        <button type="button" id="player-shuffle" class="btn btn-outline-light" aria-label="Shuffle the songs up next" title="Shuffle up next"><i class="fa-solid fa-shuffle"></i></button>
+        
         <button type="button" id="player-queue-toggle" class="btn btn-outline-light" aria-expanded="false" aria-controls="queue-panel"><i class="fa-solid fa-list"></i> Queue <span id="queue-count" class="badge text-bg-secondary">0</span></button>
         <span id="player-status" class="small text-info" role="status" aria-live="polite"></span>
       </div>
@@ -85,7 +85,6 @@
         var statusEl = document.getElementById('player-status');
         var prevBtn = document.getElementById('player-prev');
         var nextBtn = document.getElementById('player-next');
-        var shuffleBtn = document.getElementById('player-shuffle');
         var toggleBtn = document.getElementById('player-queue-toggle');
         var countEl = document.getElementById('queue-count');
         var panel = document.getElementById('queue-panel');
@@ -151,16 +150,6 @@
                 if (queue[i].uid === uid) { return i; }
             }
             return -1;
-        }
-
-        function shuffleArray(items) {   // Fisher-Yates
-            for (var i = items.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var swap = items[i];
-                items[i] = items[j];
-                items[j] = swap;
-            }
-            return items;
         }
 
         function say(message) {
@@ -317,20 +306,10 @@
             say(added.length === 1 ? 'Added to the queue.' : 'Added ' + added.length + ' songs to the queue.');
         }
 
-        function replaceQueue(items, shuffleFirst) {
+        function replaceQueue(items) {
             if (!items.length) { say('No playable songs here.'); return; }
-            if (shuffleFirst) { shuffleArray(items); }
             queue = items.slice(0, MAX_ITEMS);
             goTo(0, true);
-        }
-
-        function shuffleUpcoming() {
-            var upcoming = queue.splice(index + 1);   // only what's still to come; the current song stays put
-            shuffleArray(upcoming);
-            queue = queue.concat(upcoming);
-            render();
-            persist(true);
-            say('Shuffled the songs up next.');
         }
 
         function moveItem(uid, delta) {
@@ -433,7 +412,6 @@
             countEl.textContent = queue.length;
             prevBtn.disabled = !item;
             nextBtn.disabled = index < 0 || index + 1 >= queue.length;
-            shuffleBtn.disabled = queue.length - index - 1 < 2;   // nothing worth shuffling
             renderList();
             fitPage();
             if (item && window.MediaMetadata && navigator.mediaSession) {
@@ -452,9 +430,9 @@
                 var item = songEl ? itemFromElement(songEl) : null;
                 if (!item) { return; }
                 if (action === 'play') { playNow(item); } else { enqueue([item]); }
-            } else if (action === 'play-all' || action === 'shuffle-all' || action === 'add-all') {
+            } else if (action === 'play-all' || action === 'add-all') {
                 var items = itemsFromScope(button.dataset.queueScope);
-                if (action === 'add-all') { enqueue(items); } else { replaceQueue(items, action === 'shuffle-all'); }
+                if (action === 'add-all') { enqueue(items); } else { replaceQueue(items); }
             }
         });
 
@@ -472,7 +450,6 @@
 
         prevBtn.addEventListener('click', prevTrack);
         nextBtn.addEventListener('click', function () { nextTrack(false); });
-        shuffleBtn.addEventListener('click', shuffleUpcoming);
         clearBtn.addEventListener('click', clearAll);
         toggleBtn.addEventListener('click', function () {
             panel.hidden = !panel.hidden;
