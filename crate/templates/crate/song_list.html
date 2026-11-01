@@ -21,7 +21,7 @@
 						<th>Artist</th>
 						<th>Genre</th>
 						<th>Duration</th>
-						<th>Audio</th>
+						<th>Play</th>
 						<th>Playlist</th>
 						<th>Action</th>
 					</tr>
@@ -37,10 +37,10 @@
 							<td>						
 								<div>
 									{% if song.audio_file %}
-									<audio controls>
-										<source src="{{ song.audio_file.url }}">
-										Your browser does not support the audio element.
-									</audio>
+									<div data-song data-song-id="{{ song.id }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}" data-url="{{ song.audio_file.url }}">
+										<button type="button" class="btn btn-sm btn-primary" data-queue-action="play" title="Play {{ song.title }}"><i class="fa-solid fa-play"></i> Play</button>
+										<button type="button" class="btn btn-sm btn-outline-secondary" data-queue-action="add" title="Add {{ song.title }} to the queue"><i class="fa-solid fa-list"></i> Queue</button>
+									</div>
 									{% else %}
 									<em>No audio file</em>
 									{% endif %}
@@ -95,14 +95,4 @@
 		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-solid fa-upload"></i>Upload Songs</a>
 
 	</div>
-	<script>
-    // Only one song plays at a time: when any player starts, pause all the others.
-    // "play" events don't bubble, so this listens during the capture phase on document.
-    document.addEventListener('play', function (event) {
-        if (!(event.target instanceof HTMLAudioElement)) { return; }
-        document.querySelectorAll('audio').forEach(function (audio) {
-            if (audio !== event.target && !audio.paused) { audio.pause(); }
-        });
-    }, true);
-</script>
 {% endblock %}
