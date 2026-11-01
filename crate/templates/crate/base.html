@@ -510,6 +510,206 @@
         restore();
         render();
     })();
+
+    // Keeps the music playing while you move around the site.
+    //
+    // A normal link click loads a whole new page, which destroys the <audio> element and stops the
+    // music. Instead, clicks on links and form submissions are sent in the background and only the
+    // content inside <main> is replaced. The player bar is never touched, so playback carries on.
+    // Anything unusual (admin pages, errors, being logged out, network trouble) falls back to the
+    // browser's ordinary navigation.
+    (function () {
+        'use strict';
+
+        var bar = document.getElementById('player-bar');
+        var main = document.querySelector('main');
+        if (!bar || !main || !window.fetch || !window.DOMParser || !window.URL || !history.pushState) { return; }
+
+        var userId = bar.dataset.userId;
+        var requestNumber = 0;   // only the newest request is allowed to change the page
+        var controller = null;
+        var EXCLUDED_PATHS = /^\/(admin|accounts|media|static)\//;   // no player bar there, or not pages at all
+
+        // ---------- history and scrolling ----------
+
+        history.scrollRestoration = 'manual';   // we restore the scroll position ourselves
+
+        function rememberScroll() {
+            try { history.replaceState({ crate: true, scroll: window.scrollY || 0 }, ''); } catch (e) { /* ignore */ }
+        }
+
+        var savedScroll = history.state && history.state.crate ? history.state.scroll : 0;   // survives a reload
+        rememberScroll();
+        if (savedScroll) { window.scrollTo(0, savedScroll); }
+        window.addEventListener('pagehide', rememberScroll);
+
+        // ---------- deciding what to handle ----------
+
+        function isPlainPrimaryClick(event) {
+            return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+        }
+
+        function pageUrl(href) {
+            var url = new URL(href, location.href);
+            if (url.origin !== location.origin || (url.protocol !== 'http:' && url.protocol !== 'https:')) { return null; }
+            if (EXCLUDED_PATHS.test(url.pathname)) { return null; }
+            return url;
+        }
+
+        function wantsLink(event, link) {
+            if (event.defaultPrevented || !isPlainPrimaryClick(event)) { return false; }
+            if (link.target && link.target !== '_self') { return false; }
+            if (link.hasAttribute('download') || link.hasAttribute('data-no-boost') || link.getAttribute('rel') === 'external') { return false; }
+            var url = pageUrl(link.href);
+            if (!url) { return false; }
+            if (url.hash && url.pathname === location.pathname && url.search === location.search) { return false; }   // jump within this page
+            return true;
+        }
+
+        function exoticSubmitter(submitter) {
+            return !!submitter && ['formaction', 'formmethod', 'formtarget', 'formenctype']
+                .some(function (name) { return submitter.hasAttribute(name); });
+        }
+
+        // ---------- loading a page in the background ----------
+
+        function formDataFor(form, submitter) {
+            try {
+                return new FormData(form, submitter || undefined);   // includes the clicked button's value
+            } catch (e) {
+                var data = new FormData(form);
+                if (submitter && submitter.name) { data.append(submitter.name, submitter.value); }
+                return data;
+            }
+        }
+
+        function setBusy(busy) {
+            if (busy) { document.body.setAttribute('aria-busy', 'true'); } else { document.body.removeAttribute('aria-busy'); }
+            document.body.style.cursor = busy ? 'progress' : '';
+        }
+
+        function freshScripts(container) {
+            // scripts that arrive with new content don't run by themselves; recreate them so they do
+            Array.prototype.slice.call(container.querySelectorAll('script')).forEach(function (old) {
+                var fresh = document.createElement('script');
+                Array.prototype.forEach.call(old.attributes, function (attr) { fresh.setAttribute(attr.name, attr.value); });
+                fresh.text = old.text;
+                old.parentNode.replaceChild(fresh, old);
+            });
+        }
+
+        function showMain(doc, url, mode, scroll) {
+            document.title = doc.title || document.title;
+            while (main.firstChild) { main.removeChild(main.firstChild); }
+            Array.prototype.slice.call(doc.querySelector('main').childNodes).forEach(function (node) {
+                main.appendChild(document.importNode(node, true));
+            });
+            freshScripts(main);
+
+            if (mode === 'push') {
+                rememberScroll();
+                history.pushState({ crate: true, scroll: 0 }, '', url);
+            } else if (mode === 'replace') {
+                history.replaceState({ crate: true, scroll: 0 }, '', url);
+            }
+
+            var target = null;
+            if (mode !== 'pop' && location.hash.length > 1) {
+                try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { /* bad fragment */ }
+            }
+            if (target && target.scrollIntoView) { target.scrollIntoView(); } else { window.scrollTo(0, mode === 'pop' ? (scroll || 0) : 0); }
+
+            main.setAttribute('tabindex', '-1');   // so keyboard and screen reader users start at the new content
+            try { main.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+            document.dispatchEvent(new CustomEvent('crate:navigated'));
+        }
+
+        function takeOver(text, url, mode) {
+            // a page that isn't one of ours (an error page, the admin, a login screen): show it the ordinary way
+            if (mode === 'get') { window.location.assign(url); return; }
+            if (mode === 'pop') { window.location.reload(); return; }
+            document.open();
+            document.write(text);
+            document.close();
+        }
+
+        function load(url, init, mode, scroll) {
+            // mode: 'push' (new link/form), 'pop' (back/forward button), 'replace' (same URL again)
+            if (controller) { controller.abort(); }
+            controller = typeof AbortController === 'function' ? new AbortController() : null;
+            var mine = ++requestNumber;
+            var isPost = init.method === 'POST';
+            init.credentials = 'same-origin';
+            init.headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' };
+            if (controller) { init.signal = controller.signal; }
+            setBusy(true);
+
+            fetch(url, init).then(function (response) {
+                return response.text().then(function (text) { return { response: response, text: text }; });
+            }).then(function (result) {
+                if (mine !== requestNumber) { return; }   // a newer click took over
+                var type = (result.response.headers && result.response.headers.get('content-type')) || '';
+                var doc = /html/i.test(type) ? new DOMParser().parseFromString(result.text, 'text/html') : null;
+                var newBar = doc && doc.getElementById('player-bar');
+                var shell = doc && doc.querySelector('main') && newBar && newBar.dataset.userId === userId;
+                var finalUrl = result.response.url || String(url);
+                var hash = !result.response.redirected && typeof url === 'string' && url.indexOf('#') > -1 ? '#' + url.split('#')[1] : '';
+                setBusy(false);
+                if (!shell) {
+                    takeOver(result.text, String(url), isPost ? 'post' : mode === 'pop' ? 'pop' : 'get');
+                    return;
+                }
+                showMain(doc, finalUrl + hash, mode, scroll);
+            }).catch(function (error) {
+                if (mine !== requestNumber || (error && error.name === 'AbortError')) { return; }
+                setBusy(false);
+                if (isPost && init.fallbackForm) { init.fallbackForm.submit(); } else { window.location.assign(String(url)); }
+            });
+        }
+
+        // ---------- links ----------
+
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('a[href]') : null;
+            if (!link || !wantsLink(event, link)) { return; }
+            event.preventDefault();
+            var url = pageUrl(link.href);
+            var same = url.href === location.href;
+            load(url.href, { method: 'GET' }, same ? 'replace' : 'push');
+        });
+
+        // ---------- forms ----------
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (event.defaultPrevented || !form || !form.matches) { return; }   // e.g. the user said no to a confirm() prompt
+            if (form.hasAttribute('data-no-boost') || form.hasAttribute('data-logout')) { return; }   // logging out needs a real page load
+            if (form.target && form.target !== '_self') { return; }
+            if (exoticSubmitter(event.submitter)) { return; }
+            var method = (form.getAttribute('method') || 'get').toLowerCase();
+            if ((method !== 'get' && method !== 'post') || form.enctype === 'text/plain') { return; }
+            var url = pageUrl(form.action);
+            if (!url) { return; }
+
+            event.preventDefault();
+            var data = formDataFor(form, event.submitter);
+            if (method === 'get') {
+                var query = new URLSearchParams();
+                data.forEach(function (value, key) { if (typeof value === 'string') { query.append(key, value); } });
+                url.search = query.toString();
+                load(url.href, { method: 'GET' }, 'push');
+            } else {
+                load(url.href, { method: 'POST', body: data, fallbackForm: form }, 'push');
+            }
+        });
+
+        // ---------- back and forward buttons ----------
+
+        window.addEventListener('popstate', function (event) {
+            if (!event.state || !event.state.crate) { return; }   // e.g. only the #fragment changed
+            load(location.href, { method: 'GET' }, 'pop', event.state.scroll);
+        });
+    })();
     </script>
     {% endif %}
   </body>

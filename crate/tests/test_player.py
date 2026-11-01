@@ -173,3 +173,70 @@ class PlaylistPlayerButtonsTests(TestCase):
         theirs = Playlist.objects.create(name="Theirs", user=self.bob)
         response = self.client.get(reverse("playlist_detail", args=[theirs.id]))
         self.assertEqual(response.status_code, 404)
+
+
+class KeepPlayingNavigationTests(TestCase):
+    """Moving between pages swaps only the <main> content, so every logged-in page must have
+    exactly one <main>, and the player bar must live outside it."""
+
+    PAGES = ("home", "song_list", "playlists", "recommendations", "my_account", "upload_song")
+
+    def setUp(self):
+        self.alice = User.objects.create_user("alice", password=STRONG_PASSWORD)
+        self.client.force_login(self.alice)
+
+    def html(self, name, *args):
+        return self.client.get(reverse(name, args=args)).content.decode()
+
+    @staticmethod
+    def tags_only(html):
+        # the inline scripts mention <main> in their comments; drop them so only real tags are counted
+        return re.sub(r"<script\b.*?</script>", "", html, flags=re.S)
+
+    def test_every_page_has_exactly_one_main(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                html = self.tags_only(self.html(name))
+                self.assertEqual(html.count("<main>"), 1)
+                self.assertEqual(html.count("</main>"), 1)
+
+    def test_playlist_detail_has_exactly_one_main(self):
+        playlist = Playlist.objects.create(name="Mix", user=self.alice)
+        html = self.tags_only(self.html("playlist_detail", playlist.id))
+        self.assertEqual(html.count("<main>"), 1)
+
+    def test_player_bar_is_outside_main_so_it_is_never_replaced(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                html = self.html(name)
+                main = html[html.index("<main>"):html.index("</main>")]
+                self.assertNotIn("player-bar", main)
+                self.assertNotIn('id="player"', main)
+                self.assertGreater(html.index('id="player-bar"'), html.index("</main>"))
+
+    def test_every_page_has_a_title_for_the_address_bar_and_tab(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                self.assertRegex(self.html(name), r"<title>[^<]+</title>")
+
+    def test_navigation_script_is_on_logged_in_pages_once(self):
+        self.assertEqual(self.html("song_list").count("Keeps the music playing while you move around the site"), 1)
+
+    def test_navigation_script_is_not_sent_to_logged_out_visitors(self):
+        self.client.logout()
+        for name in ("home", "login", "signup"):
+            with self.subTest(page=name):
+                self.assertNotIn("Keeps the music playing", self.client.get(reverse(name)).content.decode())
+
+    def test_logout_form_is_never_intercepted(self):
+        # logging out must be a real page load so the player and saved queue are cleared
+        self.assertRegex(self.html("home"), r'<form action="[^"]*logout/" method="post" data-logout>')
+
+    def test_page_scripts_in_main_are_plain_inline_scripts(self):
+        # the navigation code re-creates inline scripts so they run after a swap; external
+        # scripts inside <main> would not be waited for, so there must be none
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                html = self.html(name)
+                main = html[html.index("<main>"):html.index("</main>")]
+                self.assertNotRegex(main, r"<script[^>]+src=")
