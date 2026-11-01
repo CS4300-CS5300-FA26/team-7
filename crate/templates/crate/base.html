@@ -1,4 +1,3 @@
-
 <!-- Base file implementation from homework2 specification -->
 <!-- gives access to bootstrap CSS for styling -->
 <!doctype html>
@@ -34,7 +33,7 @@
               <a class="btn btn-warning" href="{% url 'signup' %}">Sign-up</a>
           {% else %}
           <!-- Django 5+ requires a POST request to securely log out -->
-            <form action="{% url 'logout' %}" method="post">
+            <form action="{% url 'logout' %}" method="post" data-logout>
                 {% csrf_token %}
                 <button class="btn btn-primary text-light me-2" type="submit"><i class="fa-solid fa-right-from-bracket"></i>Log Out</button>
             </form>
@@ -47,5 +46,648 @@
         <!-- templates will be displayed here -->
       {% block content %}{% endblock %}
     </main>
+    {% if user.is_authenticated %}
+    <!-- Site-wide music player and queue: one <audio> element for the whole app. -->
+    <div id="player-bar" class="fixed-bottom text-bg-dark border-top border-secondary shadow" data-bs-theme="dark" data-user-id="{{ user.pk }}" hidden>
+      <div id="queue-panel" class="container py-2" hidden>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <strong>Queue</strong>
+          <button type="button" id="queue-clear" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-trash-can"></i> Clear queue</button>
+        </div>
+        <ol id="queue-list" class="list-group list-group-numbered" style="max-height: 35vh; overflow-y: auto;"></ol>
+      </div>
+      <div class="container py-2 d-flex flex-wrap align-items-center gap-2">
+        <div class="text-truncate" style="min-width: 0; flex: 1 1 160px;">
+          <div id="player-title" class="fw-semibold text-truncate"></div>
+          <div id="player-artist" class="small text-secondary text-truncate"></div>
+        </div>
+        <button type="button" id="player-prev" class="btn btn-outline-light" aria-label="Previous song" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
+        <audio id="player" controls preload="metadata" style="flex: 3 1 240px; min-width: 200px; height: 40px;"></audio>
+        <button type="button" id="player-next" class="btn btn-outline-light" aria-label="Next song" title="Next"><i class="fa-solid fa-forward-step"></i></button>
+        
+        <button type="button" id="player-queue-toggle" class="btn btn-outline-light" aria-expanded="false" aria-controls="queue-panel"><i class="fa-solid fa-list"></i> Queue <span id="queue-count" class="badge text-bg-secondary">0</span></button>
+        <span id="player-status" class="small text-info" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+    <script>
+    // Crate's site-wide player and queue.
+    // One <audio> element lives in the bar at the bottom of every page (see base.html).
+    // The queue is plain JavaScript state, saved in localStorage so it survives page loads.
+    (function () {
+        'use strict';
+
+        var bar = document.getElementById('player-bar');
+        if (!bar) { return; }   // not logged in: no player on the page
+
+        var audio = document.getElementById('player');
+        var titleEl = document.getElementById('player-title');
+        var artistEl = document.getElementById('player-artist');
+        var statusEl = document.getElementById('player-status');
+        var prevBtn = document.getElementById('player-prev');
+        var nextBtn = document.getElementById('player-next');
+        var toggleBtn = document.getElementById('player-queue-toggle');
+        var countEl = document.getElementById('queue-count');
+        var panel = document.getElementById('queue-panel');
+        var listEl = document.getElementById('queue-list');
+        var clearBtn = document.getElementById('queue-clear');
+
+        // One saved queue per user, so people sharing a browser never see each other's.
+        var STORAGE_KEY = 'crate-queue-' + bar.dataset.userId;
+        var MAX_ITEMS = 500;
+
+        var queue = [];        // [{uid, id, title, artist, url}]
+        var index = -1;        // position of the current song in the queue (-1 = nothing loaded)
+        var uidCounter = 0;    // gives every queue entry its own id, so the same song can be queued twice
+        var lastSave = 0;
+        var pendingTime = 0;   // saved position waiting for the audio file to load
+        var statusTimer = null;
+
+        // ---------- small helpers ----------
+
+        function clean(value, max) {
+            return String(value === null || value === undefined ? '' : value).slice(0, max);
+        }
+
+        function makeItem(data) {
+            var url = clean(data.url, 2000);
+            if (!url) { return null; }
+            return {
+                uid: ++uidCounter,
+                id: clean(data.id, 20),
+                title: clean(data.title, 200) || 'Untitled',
+                artist: clean(data.artist, 200),
+                url: url
+            };
+        }
+
+        function itemFromElement(el) {
+            return makeItem({
+                id: el.dataset.songId,
+                title: el.dataset.title,
+                artist: el.dataset.artist,
+                url: el.dataset.url
+            });
+        }
+
+        function itemsFromScope(selector) {
+            var scope = selector ? document.querySelector(selector) : null;
+            var items = [];
+            if (scope) {
+                scope.querySelectorAll('[data-song]').forEach(function (el) {
+                    var item = itemFromElement(el);
+                    if (item) { items.push(item); }
+                });
+            }
+            return items;
+        }
+
+        function current() {
+            return index >= 0 && index < queue.length ? queue[index] : null;
+        }
+
+        function indexOfUid(uid) {
+            for (var i = 0; i < queue.length; i++) {
+                if (queue[i].uid === uid) { return i; }
+            }
+            return -1;
+        }
+
+        function say(message) {
+            statusEl.textContent = message;
+            clearTimeout(statusTimer);
+            if (message) {
+                statusTimer = setTimeout(function () { statusEl.textContent = ''; }, 3000);
+            }
+        }
+
+        // ---------- saving and restoring ----------
+
+        function timeToSave() {
+            return audio.readyState >= 1 ? (audio.currentTime || 0) : pendingTime;
+        }
+
+        function persist(force) {
+            var now = Date.now();
+            if (!force && now - lastSave < 2000) { return; }
+            lastSave = now;
+            try {
+                if (!queue.length) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    items: queue.map(function (item) {
+                        return { id: item.id, title: item.title, artist: item.artist, url: item.url };
+                    }),
+                    index: index,
+                    time: timeToSave(),
+                    playing: !audio.paused
+                }));
+            } catch (e) {
+                // storage full or blocked: the queue just won't survive a page load
+            }
+        }
+
+        function restore() {
+            var saved;
+            try {
+                saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            } catch (e) {
+                return;
+            }
+            if (!saved || !Array.isArray(saved.items) || !saved.items.length || saved.items.length > MAX_ITEMS) { return; }
+
+            var items = [];
+            for (var i = 0; i < saved.items.length; i++) {
+                var raw = saved.items[i];
+                var item = raw && typeof raw === 'object' ? makeItem(raw) : null;
+                if (!item) { return; }   // anything odd in the saved data: ignore all of it
+                items.push(item);
+            }
+            var savedIndex = Number(saved.index);
+            if (!isFinite(savedIndex) || savedIndex < 0 || savedIndex >= items.length) { return; }
+
+            queue = items;
+            index = Math.floor(savedIndex);
+            pendingTime = Number(saved.time) > 0 ? Number(saved.time) : 0;
+            lastSave = Date.now();   // don't overwrite the saved position while the file is still loading
+            audio.src = queue[index].url;
+            audio.addEventListener('loadedmetadata', function onMetadata() {
+                audio.removeEventListener('loadedmetadata', onMetadata);
+                if (pendingTime > 0) { audio.currentTime = pendingTime; }
+                pendingTime = 0;
+                if (saved.playing) { startPlayback(); }
+            });
+            render();
+        }
+
+        // ---------- playback ----------
+
+        function startPlayback() {
+            var promise = audio.play();
+            if (promise && promise.catch) {
+                promise.catch(function (error) {
+                    if (error && error.name === 'AbortError') { return; }   // skipped past quickly: expected
+                    say('Press play to start the music.');   // the browser blocked automatic playback
+                });
+            }
+        }
+
+        function unload() {
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            index = -1;
+            pendingTime = 0;
+            render();
+            persist(true);
+        }
+
+        function loadCurrent(autoplay) {
+            var item = current();
+            if (!item) { unload(); return; }
+            pendingTime = 0;
+            audio.src = item.url;   // starts the new file from the beginning
+            if (autoplay) { startPlayback(); }
+            render();
+            persist(true);
+        }
+
+        function goTo(i, autoplay) {
+            index = i;
+            loadCurrent(autoplay);
+        }
+
+        function nextTrack(fromEnded) {
+            if (index + 1 < queue.length) {
+                goTo(index + 1, true);
+            } else if (fromEnded) {
+                audio.pause();
+                audio.currentTime = 0;
+                say('End of the queue.');
+                render();
+                persist(true);
+            }
+        }
+
+        function prevTrack() {
+            if (!current()) { return; }
+            if (audio.currentTime > 3 || index === 0) {
+                audio.currentTime = 0;   // like most players: a late "previous" restarts the song
+            } else {
+                goTo(index - 1, true);
+            }
+        }
+
+        // ---------- queue actions ----------
+
+        function playNow(item) {
+            var now = current();
+            if (now && item.id && now.id === item.id) {   // already the current song: just resume it
+                if (audio.paused) { startPlayback(); }
+                return;
+            }
+            queue.splice(index + 1, 0, item);   // play it next, and the rest of the queue carries on after it
+            goTo(index + 1, true);
+        }
+
+        function enqueue(items) {
+            if (!items.length) { say('Nothing to add.'); return; }
+            var room = MAX_ITEMS - queue.length;
+            if (room <= 0) { say('The queue is full.'); return; }
+            var added = items.slice(0, room);
+            queue = queue.concat(added);
+            if (index === -1) {
+                goTo(0, false);   // first song in an empty queue is loaded and ready, but not started
+            } else {
+                render();
+                persist(true);
+            }
+            say(added.length === 1 ? 'Added to the queue.' : 'Added ' + added.length + ' songs to the queue.');
+        }
+
+        function replaceQueue(items) {
+            if (!items.length) { say('No playable songs here.'); return; }
+            queue = items.slice(0, MAX_ITEMS);
+            goTo(0, true);
+        }
+
+        function moveItem(uid, delta) {
+            var from = indexOfUid(uid);
+            var to = from + delta;
+            if (from < 0 || to < 0 || to >= queue.length) { return; }
+            var swap = queue[from];
+            queue[from] = queue[to];
+            queue[to] = swap;
+            if (index === from) { index = to; } else if (index === to) { index = from; }
+            render();
+            persist(true);
+        }
+
+        function removeItem(uid) {
+            var i = indexOfUid(uid);
+            if (i < 0) { return; }
+            var wasPlaying = !audio.paused;
+            queue.splice(i, 1);
+            if (!queue.length) { unload(); return; }
+            if (i < index) {
+                index--;
+                render();
+                persist(true);
+            } else if (i === index) {
+                if (index >= queue.length) {   // removed the last song: fall back to the one before it
+                    index = queue.length - 1;
+                    loadCurrent(false);
+                } else {
+                    loadCurrent(wasPlaying);   // the next song slides into this spot
+                }
+            } else {
+                render();
+                persist(true);
+            }
+        }
+
+        function clearAll() {
+            queue = [];
+            unload();
+        }
+
+        // ---------- drawing ----------
+
+        function makeButton(action, uid, className, icon, label, disabled) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = className;
+            button.dataset.action = action;
+            button.dataset.uid = uid;
+            button.setAttribute('aria-label', label);
+            button.title = label;
+            button.disabled = !!disabled;
+            var i = document.createElement('i');
+            i.className = icon;
+            button.appendChild(i);
+            return button;
+        }
+
+        function renderList() {
+            listEl.textContent = '';
+            queue.forEach(function (item, i) {
+                var li = document.createElement('li');
+                li.className = 'list-group-item d-flex align-items-center gap-2' + (i === index ? ' active' : '');
+                if (i === index) { li.setAttribute('aria-current', 'true'); }
+
+                var jump = document.createElement('button');
+                jump.type = 'button';
+                jump.className = 'btn btn-link p-0 text-start text-truncate flex-grow-1 text-decoration-none ' +
+                    (i === index ? 'text-white' : '');
+                jump.dataset.action = 'jump';
+                jump.dataset.uid = item.uid;
+                jump.title = 'Play ' + item.title;
+                var name = document.createElement('span');
+                name.textContent = item.title;
+                var by = document.createElement('small');
+                by.className = 'opacity-75';
+                by.textContent = item.artist ? ' - ' + item.artist : '';
+                jump.appendChild(name);
+                jump.appendChild(by);
+
+                li.appendChild(jump);
+                li.appendChild(makeButton('up', item.uid, 'btn btn-sm btn-outline-secondary', 'fa-solid fa-arrow-up', 'Move up', i === 0));
+                li.appendChild(makeButton('down', item.uid, 'btn btn-sm btn-outline-secondary', 'fa-solid fa-arrow-down', 'Move down', i === queue.length - 1));
+                li.appendChild(makeButton('remove', item.uid, 'btn btn-sm btn-outline-danger', 'fa-solid fa-xmark', 'Remove from queue', false));
+                listEl.appendChild(li);
+            });
+        }
+
+        function fitPage() {
+            // keep the bottom of every page clear of the bar
+            document.body.style.paddingBottom = queue.length ? bar.offsetHeight + 'px' : '';
+        }
+
+        function render() {
+            var item = current();
+            bar.hidden = queue.length === 0;
+            titleEl.textContent = item ? item.title : '';
+            artistEl.textContent = item ? item.artist : '';
+            countEl.textContent = queue.length;
+            prevBtn.disabled = !item;
+            nextBtn.disabled = index < 0 || index + 1 >= queue.length;
+            renderList();
+            fitPage();
+            if (item && window.MediaMetadata && navigator.mediaSession) {
+                navigator.mediaSession.metadata = new window.MediaMetadata({ title: item.title, artist: item.artist });
+            }
+        }
+
+        // ---------- wiring ----------
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest ? event.target.closest('[data-queue-action]') : null;
+            if (!button) { return; }
+            var action = button.dataset.queueAction;
+            if (action === 'play' || action === 'add') {
+                var songEl = button.closest('[data-song]');
+                var item = songEl ? itemFromElement(songEl) : null;
+                if (!item) { return; }
+                if (action === 'play') { playNow(item); } else { enqueue([item]); }
+            } else if (action === 'play-all' || action === 'add-all') {
+                var items = itemsFromScope(button.dataset.queueScope);
+                if (action === 'add-all') { enqueue(items); } else { replaceQueue(items); }
+            }
+        });
+
+        listEl.addEventListener('click', function (event) {
+            var button = event.target.closest('button[data-action]');
+            if (!button) { return; }
+            var uid = Number(button.dataset.uid);
+            switch (button.dataset.action) {
+                case 'jump': var i = indexOfUid(uid); if (i >= 0) { goTo(i, true); } break;
+                case 'up': moveItem(uid, -1); break;
+                case 'down': moveItem(uid, 1); break;
+                case 'remove': removeItem(uid); break;
+            }
+        });
+
+        prevBtn.addEventListener('click', prevTrack);
+        nextBtn.addEventListener('click', function () { nextTrack(false); });
+        clearBtn.addEventListener('click', clearAll);
+        toggleBtn.addEventListener('click', function () {
+            panel.hidden = !panel.hidden;
+            toggleBtn.setAttribute('aria-expanded', String(!panel.hidden));
+            fitPage();
+        });
+
+        audio.addEventListener('ended', function () { nextTrack(true); });
+        audio.addEventListener('timeupdate', function () { persist(false); });
+        audio.addEventListener('pause', function () { persist(true); });
+        audio.addEventListener('error', function () {
+            if (!audio.getAttribute('src')) { return; }
+            var item = current();
+            say('Could not play ' + (item ? item.title : 'this song') + '.');
+            if (index + 1 < queue.length) { nextTrack(false); }   // don't get stuck on a broken file
+        });
+        window.addEventListener('pagehide', function () { persist(true); });
+        window.addEventListener('resize', fitPage);
+
+        // Logging out wipes the saved queue from this browser.
+        document.addEventListener('submit', function (event) {
+            if (event.target && event.target.matches && event.target.matches('form[data-logout]')) {
+                try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* nothing to clear */ }
+            }
+        });
+
+        // Lock-screen / keyboard media keys, where the browser supports them.
+        if (navigator.mediaSession) {
+            try {
+                navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+                navigator.mediaSession.setActionHandler('nexttrack', function () { nextTrack(false); });
+            } catch (e) { /* not supported */ }
+        }
+
+        restore();
+        render();
+    })();
+
+    // Keeps the music playing while you move around the site.
+    //
+    // A normal link click loads a whole new page, which destroys the <audio> element and stops the
+    // music. Instead, clicks on links and form submissions are sent in the background and only the
+    // content inside <main> is replaced. The player bar is never touched, so playback carries on.
+    // Anything unusual (admin pages, errors, being logged out, network trouble) falls back to the
+    // browser's ordinary navigation.
+    (function () {
+        'use strict';
+
+        var bar = document.getElementById('player-bar');
+        var main = document.querySelector('main');
+        if (!bar || !main || !window.fetch || !window.DOMParser || !window.URL || !history.pushState) { return; }
+
+        var userId = bar.dataset.userId;
+        var requestNumber = 0;   // only the newest request is allowed to change the page
+        var controller = null;
+        var EXCLUDED_PATHS = /^\/(admin|accounts|media|static)\//;   // no player bar there, or not pages at all
+
+        // ---------- history and scrolling ----------
+
+        history.scrollRestoration = 'manual';   // we restore the scroll position ourselves
+
+        function rememberScroll() {
+            try { history.replaceState({ crate: true, scroll: window.scrollY || 0 }, ''); } catch (e) { /* ignore */ }
+        }
+
+        var savedScroll = history.state && history.state.crate ? history.state.scroll : 0;   // survives a reload
+        rememberScroll();
+        if (savedScroll) { window.scrollTo(0, savedScroll); }
+        window.addEventListener('pagehide', rememberScroll);
+
+        // ---------- deciding what to handle ----------
+
+        function isPlainPrimaryClick(event) {
+            return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+        }
+
+        function pageUrl(href) {
+            var url = new URL(href, location.href);
+            if (url.origin !== location.origin || (url.protocol !== 'http:' && url.protocol !== 'https:')) { return null; }
+            if (EXCLUDED_PATHS.test(url.pathname)) { return null; }
+            return url;
+        }
+
+        function wantsLink(event, link) {
+            if (event.defaultPrevented || !isPlainPrimaryClick(event)) { return false; }
+            if (link.target && link.target !== '_self') { return false; }
+            if (link.hasAttribute('download') || link.hasAttribute('data-no-boost') || link.getAttribute('rel') === 'external') { return false; }
+            var url = pageUrl(link.href);
+            if (!url) { return false; }
+            if (url.hash && url.pathname === location.pathname && url.search === location.search) { return false; }   // jump within this page
+            return true;
+        }
+
+        function exoticSubmitter(submitter) {
+            return !!submitter && ['formaction', 'formmethod', 'formtarget', 'formenctype']
+                .some(function (name) { return submitter.hasAttribute(name); });
+        }
+
+        // ---------- loading a page in the background ----------
+
+        function formDataFor(form, submitter) {
+            try {
+                return new FormData(form, submitter || undefined);   // includes the clicked button's value
+            } catch (e) {
+                var data = new FormData(form);
+                if (submitter && submitter.name) { data.append(submitter.name, submitter.value); }
+                return data;
+            }
+        }
+
+        function setBusy(busy) {
+            if (busy) { document.body.setAttribute('aria-busy', 'true'); } else { document.body.removeAttribute('aria-busy'); }
+            document.body.style.cursor = busy ? 'progress' : '';
+        }
+
+        function freshScripts(container) {
+            // scripts that arrive with new content don't run by themselves; recreate them so they do
+            Array.prototype.slice.call(container.querySelectorAll('script')).forEach(function (old) {
+                var fresh = document.createElement('script');
+                Array.prototype.forEach.call(old.attributes, function (attr) { fresh.setAttribute(attr.name, attr.value); });
+                fresh.text = old.text;
+                old.parentNode.replaceChild(fresh, old);
+            });
+        }
+
+        function showMain(doc, url, mode, scroll) {
+            document.title = doc.title || document.title;
+            while (main.firstChild) { main.removeChild(main.firstChild); }
+            Array.prototype.slice.call(doc.querySelector('main').childNodes).forEach(function (node) {
+                main.appendChild(document.importNode(node, true));
+            });
+            freshScripts(main);
+
+            if (mode === 'push') {
+                rememberScroll();
+                history.pushState({ crate: true, scroll: 0 }, '', url);
+            } else if (mode === 'replace') {
+                history.replaceState({ crate: true, scroll: 0 }, '', url);
+            }
+
+            var target = null;
+            if (mode !== 'pop' && location.hash.length > 1) {
+                try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) { /* bad fragment */ }
+            }
+            if (target && target.scrollIntoView) { target.scrollIntoView(); } else { window.scrollTo(0, mode === 'pop' ? (scroll || 0) : 0); }
+
+            main.setAttribute('tabindex', '-1');   // so keyboard and screen reader users start at the new content
+            try { main.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+            document.dispatchEvent(new CustomEvent('crate:navigated'));
+        }
+
+        function takeOver(text, url, mode) {
+            // a page that isn't one of ours (an error page, the admin, a login screen): show it the ordinary way
+            if (mode === 'get') { window.location.assign(url); return; }
+            if (mode === 'pop') { window.location.reload(); return; }
+            document.open();
+            document.write(text);
+            document.close();
+        }
+
+        function load(url, init, mode, scroll) {
+            // mode: 'push' (new link/form), 'pop' (back/forward button), 'replace' (same URL again)
+            if (controller) { controller.abort(); }
+            controller = typeof AbortController === 'function' ? new AbortController() : null;
+            var mine = ++requestNumber;
+            var isPost = init.method === 'POST';
+            init.credentials = 'same-origin';
+            init.headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' };
+            if (controller) { init.signal = controller.signal; }
+            setBusy(true);
+
+            fetch(url, init).then(function (response) {
+                return response.text().then(function (text) { return { response: response, text: text }; });
+            }).then(function (result) {
+                if (mine !== requestNumber) { return; }   // a newer click took over
+                var type = (result.response.headers && result.response.headers.get('content-type')) || '';
+                var doc = /html/i.test(type) ? new DOMParser().parseFromString(result.text, 'text/html') : null;
+                var newBar = doc && doc.getElementById('player-bar');
+                var shell = doc && doc.querySelector('main') && newBar && newBar.dataset.userId === userId;
+                var finalUrl = result.response.url || String(url);
+                var hash = !result.response.redirected && typeof url === 'string' && url.indexOf('#') > -1 ? '#' + url.split('#')[1] : '';
+                setBusy(false);
+                if (!shell) {
+                    takeOver(result.text, String(url), isPost ? 'post' : mode === 'pop' ? 'pop' : 'get');
+                    return;
+                }
+                showMain(doc, finalUrl + hash, mode, scroll);
+            }).catch(function (error) {
+                if (mine !== requestNumber || (error && error.name === 'AbortError')) { return; }
+                setBusy(false);
+                if (isPost && init.fallbackForm) { init.fallbackForm.submit(); } else { window.location.assign(String(url)); }
+            });
+        }
+
+        // ---------- links ----------
+
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('a[href]') : null;
+            if (!link || !wantsLink(event, link)) { return; }
+            event.preventDefault();
+            var url = pageUrl(link.href);
+            var same = url.href === location.href;
+            load(url.href, { method: 'GET' }, same ? 'replace' : 'push');
+        });
+
+        // ---------- forms ----------
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (event.defaultPrevented || !form || !form.matches) { return; }   // e.g. the user said no to a confirm() prompt
+            if (form.hasAttribute('data-no-boost') || form.hasAttribute('data-logout')) { return; }   // logging out needs a real page load
+            if (form.target && form.target !== '_self') { return; }
+            if (exoticSubmitter(event.submitter)) { return; }
+            var method = (form.getAttribute('method') || 'get').toLowerCase();
+            if ((method !== 'get' && method !== 'post') || form.enctype === 'text/plain') { return; }
+            var url = pageUrl(form.action);
+            if (!url) { return; }
+
+            event.preventDefault();
+            var data = formDataFor(form, event.submitter);
+            if (method === 'get') {
+                var query = new URLSearchParams();
+                data.forEach(function (value, key) { if (typeof value === 'string') { query.append(key, value); } });
+                url.search = query.toString();
+                load(url.href, { method: 'GET' }, 'push');
+            } else {
+                load(url.href, { method: 'POST', body: data, fallbackForm: form }, 'push');
+            }
+        });
+
+        // ---------- back and forward buttons ----------
+
+        window.addEventListener('popstate', function (event) {
+            if (!event.state || !event.state.crate) { return; }   // e.g. only the #fragment changed
+            load(location.href, { method: 'GET' }, 'pop', event.state.scroll);
+        });
+    })();
+    </script>
+    {% endif %}
   </body>
 </html>
