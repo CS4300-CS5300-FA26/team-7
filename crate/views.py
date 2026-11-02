@@ -6,6 +6,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_POST
 from crate.models import Song, Playlist, read_audio_metadata
 from .forms import SongForm
+from django.db.models import Case, F, IntegerField, Q, When
+from django.db.models.functions import Lower
 
 #Imports for my_account view
 from django.contrib import messages
@@ -195,3 +197,61 @@ def song_delete(request, id):
     song = get_object_or_404(Song, id=id, user=request.user)   # other users' songs are a 404
     song.delete()
     return redirect('song_list')
+
+#The four current options to search by
+SORT_CHOICES = ['title', 'artist', 'genre', 'length']
+
+#Recieves songs, what to sort by, and wheter it is ascending or descending
+def sort_songs(songs, sort, direction):
+    descending = direction == 'desc'
+
+    def ordered(expression):
+        return expression.desc() if descending else expression.asc()
+
+    #Calculates total length of song in seconds for sorting purposes
+    if sort == 'length':
+        songs = songs.annotate(total_seconds=F('minutes') * 60 + F('seconds'))
+        primary = [
+            F('total_seconds').desc(nulls_last=True) if descending
+            else F('total_seconds').asc(nulls_last=True)
+        ]
+
+    #Makes it so songs without a genre will always appear at the bottom (May Change)    
+    elif sort == 'genre':
+        songs = songs.annotate(
+            has_no_genre=Case(
+                When(genre='', then=1),
+                default=0,
+                output_field=IntegerField(),
+            ),
+        )
+        primary = ['has_no_genre', ordered(Lower('genre'))]
+    else:
+        primary = [ordered(Lower(sort))]
+
+    return songs.order_by(*primary, Lower('title'), 'id')
+
+@login_required
+def search(request):
+    songs = Song.objects.filter(user=request.user)
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        songs = songs.filter(
+            Q(title__icontains=q) | Q(artist__icontains=q)
+            | Q(album__icontains=q) | Q(genre__icontains=q)
+        )
+
+    sort = request.GET.get('sort', '').strip().lower()
+    if sort not in SORT_CHOICES:
+        sort = ''
+    direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
+    songs = sort_songs(songs, sort, direction) if sort else songs.order_by('id')
+
+    return render(request, 'crate/search.html', {
+        'songs': songs,
+        'q': q,
+        'sort_choices': SORT_CHOICES,
+        'current_sort': sort,
+        'current_dir': direction,
+    })
