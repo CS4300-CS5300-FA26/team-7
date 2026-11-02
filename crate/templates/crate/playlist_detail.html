@@ -11,12 +11,24 @@
     <h3 class="mt-4">Songs in this Playlist</h3>
 
     {% if songs %}
+    <!-- Buttons for the site-wide player in base.html; they act on the songs inside #playlist-songs -->
+    <div class="mb-3 d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary" data-queue-action="play-all" data-queue-scope="#playlist-songs">
+            <i class="fa-solid fa-play"></i> Play playlist
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-queue-action="add-all" data-queue-scope="#playlist-songs">
+            <i class="fa-solid fa-list"></i> Add to queue
+        </button>
+    </div>
+
+    <div id="playlist-songs">
     <table class="table table-striped">
         <thead>
             <tr>
                 <th>Title</th>
                 <th>Artist</th>
                 <th>Album</th>
+                <th>Play</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -26,6 +38,16 @@
                 <td>{{ song.title }}</td>
                 <td>{{ song.artist }}</td>
                 <td>{{ song.album|default:"—" }}</td>
+                <td>
+                    {% if song.audio_file %}
+                    <div data-song data-song-id="{{ song.id }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}" data-url="{{ song.audio_file.url }}">
+                        <button type="button" class="btn btn-sm btn-primary" data-queue-action="play" title="Play {{ song.title }}"><i class="fa-solid fa-play"></i> Play</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-queue-action="add" title="Add {{ song.title }} to the queue"><i class="fa-solid fa-list"></i> Queue</button>
+                    </div>
+                    {% else %}
+                    <em>No audio file</em>
+                    {% endif %}
+                </td>
                 <td>
                     <form method="post" action="{% url 'remove_song_from_playlist' playlist.id song.id %}"
                         onsubmit="return confirm('Remove this song from the playlist?');">
@@ -39,6 +61,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
     <p>This playlist is empty. Add some songs below!</p>
     {% endif %}
