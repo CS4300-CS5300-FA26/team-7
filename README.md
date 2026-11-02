@@ -23,6 +23,7 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 - Sprint 1: Claude - Helped with Behave Tests.
 
 - Sprint 2: Claude - Assisted with diagnosing playback issues and tests for the audio player
+- Sprint 2: Claude - Helped with html, views, and tests for search feature
 
 ## Dev Guide To Run The App
 
