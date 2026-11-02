@@ -29,6 +29,8 @@ urlpatterns = [
     path('song_list/', views.song_list, name='song_list'),
     path('songs/<int:id>/delete/', views.song_delete, name='song_delete'),
 
+    path('search/', views.search, name='search'),
+
     path('recommendations/', views.recommendations, name='recommendations'),
     
     path('playlists/', views.playlists, name='playlists'),
