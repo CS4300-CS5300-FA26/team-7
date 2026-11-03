@@ -1,20 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.contrib.auth import login
 from django.views.decorators.http import require_POST
-from django.contrib.auth.forms import UserCreationForm
-from django.views.decorators.http import require_POST
-from crate.models import Song, Playlist, read_audio_metadata
+
 from .forms import SongForm
-from django.db.models import Case, F, IntegerField, Q, When
-from django.db.models.functions import Lower
+
+from crate.models import Song, Playlist, read_audio_metadata
+
+from django.db.models import Case, F, IntegerField, Q, When, Value
+from django.db.models.functions import Lower, Coalesce
 
 #Imports for my_account view
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
-from django.shortcuts import render, redirect
+from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 
 
 # we will use this when setting up authentication through Django accounts
@@ -40,6 +39,14 @@ def signup_view(request):
         form = UserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
 
+
+# Length buckets in seconds: shor < 3:00, medium 3:00-5:00, long > 5:00
+LENGTH_BUCKETS = {
+    "short": (0, 179),
+    "medium": (180, 300),
+    "long": (301, None),
+}
+
 # Displays the logged-in user's own songs as a list.
 # Login required — only authenticated users can view it, and nobody sees
 # anyone else's songs.
@@ -47,10 +54,48 @@ def signup_view(request):
 def song_list(request):
     # grab this user's songs from the database store it in songs
     songs = Song.objects.filter(user=request.user)
+
+    # Read the chosen filters from the query string (GET) Each is optional.
+    name = request.GET.get("name", "").strip()
+    genre = request.GET.get("genre", "").strip()
+    length = request.GET.get("length", "").strip()
+
+    # Apply each filter only if the user actually chose it, so any
+    # combination of 1, 2, or 3 works — and no filters means "show all".
+    if name:
+        songs = songs.filter(title__icontains=name)
+    if genre:
+        songs = songs.filter(genre__iexact=genre)
+    if length in LENGTH_BUCKETS:
+        lo, hi = LENGTH_BUCKETS[length]
+        songs = songs.annotate(
+            total_seconds=Coalesce(F("minutes"), Value(0)) * 60
+            + Coalesce(F("seconds"), Value(0))
+        ).filter(total_seconds__gte=lo)
+        if hi is not None:
+            songs = songs.filter(total_seconds__lte=hi)
+
+    # The genres this user actually has, for the dropdown (no empty values).
+    genre_options = (
+        Song.objects.filter(user=request.user)
+        .exclude(genre="")
+        .values_list("genre", flat=True)
+        .distinct()
+        .order_by("genre")
+    )
+
     #allows this user's playlists to displayed on song page
     playlists = Playlist.objects.filter(user=request.user)
     # pass the songs to the template as songs and render the page
-    return render(request, 'crate/song_list.html', {'songs': songs, 'playlists' : playlists})
+    return render(request, 'crate/song_list.html', {
+        'songs': songs, 
+        'playlists' : playlists, 
+        'genre_options': genre_options,
+        # pass current selections back so the form stays filled in after submitting
+        'current_name': name,
+        'current_genre': genre,
+        'current_length': length,
+    })
 
 # Displays the user's playlists (newest first) plus the user's song list.
 # The playlists populate the page's table; the songs feed the
