@@ -53,6 +53,8 @@
       <div id="queue-panel" class="container py-2" hidden>
         <div class="d-flex justify-content-between align-items-center mb-2">
           <strong>Queue</strong>
+          <!--Button to shuffle the playlist, when pressed, if queue has >1 songs order will randomize-->
+          <button type="button" id="player-shuffle" class="btn btn-sm btn-outline-light" aria-label="Shuffle upcoming songs" title="Shuffle upcoming songs"><i class="fa-solid fa-shuffle"></i></button>
           <button type="button" id="queue-clear" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-trash-can"></i> Clear queue</button>
         </div>
         <ol id="queue-list" class="list-group list-group-numbered" style="max-height: 35vh; overflow-y: auto;"></ol>
@@ -91,6 +93,9 @@
         var panel = document.getElementById('queue-panel');
         var listEl = document.getElementById('queue-list');
         var clearBtn = document.getElementById('queue-clear');
+
+        // For the shuffle button
+        var shuffleBtn = document.getElementById('player-shuffle');
 
         // One saved queue per user, so people sharing a browser never see each other's.
         var STORAGE_KEY = 'crate-queue-' + bar.dataset.userId;
@@ -282,6 +287,47 @@
 
         // ---------- queue actions ----------
 
+        // Function for shuffling the queue
+        function shuffleUpcoming() {   // leaves the current song and everything before it alone
+
+            // Gives the position of the first song after the current song
+            var start = index + 1;
+
+            // If there are less than 2 songs other than the current song 
+            // We cannot shuffle the playlist
+            if (queue.length - start < 2) { 
+                say('Nothing to shuffle.'); return; 
+            }
+
+            // Gets a copy of the remainder of the queues songs
+            var upcoming = queue.slice(start);
+
+            // using fisher-yates for equal probability random orderings
+            for (var i = upcoming.length - 1; i > 0; i--) {   // Fisher-Yates
+                // gets random position swap_to between 0 and i and gives a decimal
+                // gives a value between 0-1 exclusively, then *(i+1) makes it stretch to remaining length i
+                // i =3 then value lies between 0-4
+                var j = Math.floor(Math.random() * (i + 1));
+                
+                // swaps songs at position i and swap_to_position
+                // saves the song at i in a temp variable
+                var tmp = upcoming[i]; 
+                // saves new song to i from j
+                upcoming[i] = upcoming[j]; 
+                // saves the song previously in i to j
+                upcoming[j] = tmp;
+            }
+
+            // rebuild the queue from new order saved in upcoming
+            queue = queue.slice(0, start).concat(upcoming);
+            // update page to see new order
+            render();
+            // save to local storage ( so queue order persists on page reload )
+            persist(true);
+            // display status
+            say('Queue shuffled.');
+        }
+
         function playNow(item) {
             var now = current();
             if (now && item.id && now.id === item.id) {   // already the current song: just resume it
@@ -413,6 +459,8 @@
             countEl.textContent = queue.length;
             prevBtn.disabled = !item;
             nextBtn.disabled = index < 0 || index + 1 >= queue.length;
+            //Disable the shuffle button if the playlist has 1 or less songs other than current song   
+            shuffleBtn.disabled = queue.length - (index + 1) < 2;
             renderList();
             fitPage();
             if (item && window.MediaMetadata && navigator.mediaSession) {
@@ -448,6 +496,11 @@
                 case 'remove': removeItem(uid); break;
             }
         });
+
+        // wiring for the shuffle button
+        // when the button is clicked it calls the shuffleUpcoming function
+        // which shuffles the playlist
+        shuffleBtn.addEventListener('click', shuffleUpcoming);
 
         prevBtn.addEventListener('click', prevTrack);
         nextBtn.addEventListener('click', function () { nextTrack(false); });
