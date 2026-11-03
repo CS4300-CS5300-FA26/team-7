@@ -24,6 +24,7 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 
 - Sprint 2: Claude - Assisted with diagnosing playback issues and tests for the audio player
 - Sprint 2: Claude - Helped with html, views, and tests for search feature
+- Sprint 2: Claude - Helped with domain registration wiring and process
 
 ## Dev Guide To Run The App
 
@@ -36,4 +37,4 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 - Run "python manage.py runserver"
 - Click on link produced by runserver command
 
-## [Deployed Webapp link](https://crate-app-c51a747af77b.herokuapp.com/)
+## [Deployed Webapp link](https://www.crate-music.app)
