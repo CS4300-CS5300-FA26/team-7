@@ -12,6 +12,47 @@
 	<div class="container mt-5">
 		<h1>Songs</h1>
 
+		<!-- Filter toggle icon: shows/hides the filter panel -->
+		<button type="button" class="btn btn-outline-secondary mb-3"
+		 	onclick="const p=document.getElementById('filter-panel'); p.hidden=!p.hidden;">
+			<i class="fa-solid fa-filter"></i> Filter
+		</button>
+
+		<!-- Filter panel. Starts open if a filter is already active (so selections stay
+			visible), otherwise hidden until the user clicks the filter icon. Submits via GET. -->
+		<div id="filter-panel" class="mb-4 p-3 border rounded"
+			{% if not current_name and not current_genre and not current_length %}hidden{% endif %}>
+			<form method="get" class="row g-2 align-items-end">
+				<div class="col-auto">
+					<label for="filter-name" class="form-label">Name</label>
+					<input type="text" id="filter-name" name="name" class="form-control"
+						value="{{ current_name }}" placeholder="Song title">
+				</div>
+				<div class="col-auto">
+					<label for="filter-genre" class="form-label">Genre</label>
+					<select id="filter-genre" name="genre" class="form-select">
+						<option value="">Any</option>
+						{% for g in genre_options %}
+							<option value="{{ g }}" {% if g == current_genre %}selected{% endif %}>{{ g }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-auto">
+					<label for="filter-length" class="form-label">Length</label>
+					<select id="filter-length" name="length" class="form-select">
+						<option value="">Any</option>
+						<option value="short" {% if current_length == 'short' %}selected{% endif %}>Under 3 min</option>
+						<option value="medium" {% if current_length == 'medium' %}selected{% endif %}>3&ndash;5 min</option>
+						<option value="long" {% if current_length == 'long' %}selected{% endif %}>Over 5 min</option>
+					</select>
+				</div>
+				<div class="col-auto">
+					<button type="submit" class="btn btn-primary">Apply</button>
+					<a href="{% url 'song_list' %}" class="btn btn-outline-secondary">Clear</a>
+				</div>
+			</form>
+		</div>
+
         <!-- If song entities exist in the database -->
 		{% if songs %}	
 			<!-- Table view of songs -->
@@ -92,7 +133,11 @@
 
         <!-- If no song entities exist in the database -->
 		{% else %}
-			<p>No songs are currently available.</p>
+			{% if current_name or current_genre or current_length %}
+				<p>No songs match your filters. <a href="{% url 'song_list' %}">Clear Filters</a></p>
+			{% else %}
+				<p>No songs are currently available.</p>
+			{% endif %}
 		{% endif %}
 		<a class="btn btn-primary" href="{% url 'upload_song' %}"><i class="fa-solid fa-upload"></i>Upload Songs</a>
 
