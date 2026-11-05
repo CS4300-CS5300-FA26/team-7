@@ -80,6 +80,7 @@ class ShuffleQueueBrowserTests(LiveServerTestCase):
     ##########################
 
     # loads 8 songs, presses shuffle, checks that order is changed
+    # Flaky since there is a chance the shuffle returns the exact same queue
     @flaky(max_runs=3,min_passes=1)
     def test_shuffle_changes_queue_order(self):
         self.open_with_queue(count=8)
