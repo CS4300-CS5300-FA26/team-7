@@ -1,0 +1,14 @@
+{% extends "crate/base.html" %}
+{% block title %}Enter code - Crate{% endblock %}
+{% block content %}
+  <div class="container mt-5">
+    <h2 style="margin-bottom: 3vh;">Enter Your Code</h2>
+    <p>If that email is registered, we've sent a 6-digit code to it.</p>
+    <form method="post" style="margin-bottom: 3vh;">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Log in</button>
+    </form>
+    <a href="{% url 'forgot_password' %}">Send a new code</a>
+  </div>
+{% endblock %}

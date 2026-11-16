@@ -300,3 +300,76 @@ def search(request):
         'current_sort': sort,
         'current_dir': direction,
     })
+
+
+
+#######################################
+#forgot password
+#######################################
+
+import logging
+import secrets
+import time
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+
+from .forms import ForgotPasswordForm, VerifyCodeForm
+
+User = get_user_model()
+logger = logging.getLogger(__name__)
+
+CODE_LIFETIME = 600   # seconds
+MAX_ATTEMPTS = 5
+
+
+def forgot_password(request):
+    form = ForgotPasswordForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = User.objects.filter(
+            email__iexact=form.cleaned_data["email"], is_active=True
+        ).first()
+        if user:
+            code = f"{secrets.randbelow(10**6):06d}"
+            request.session["login_code"] = {
+                "user_id": user.pk,
+                "code": code,
+                "expires": time.time() + CODE_LIFETIME,
+                "attempts": 0,
+            }
+            try:
+                send_mail(
+                    "Your Crate login code",
+                    f"Your login code is {code}.\n\n"
+                    "It expires in 10 minutes. If you didn't request this, ignore this email.",
+                    None,  # uses DEFAULT_FROM_EMAIL
+                    [user.email],
+                )
+            except Exception:
+                # Log it, but show the same page so we don't reveal which emails exist
+                logger.exception("Failed to send login code email")
+        # Same response whether or not the email exists
+        request.session["code_requested"] = True
+        return redirect("verify_code")
+    return render(request, "crate/forgot_password.html", {"form": form})
+
+
+def verify_code(request):
+    if not request.session.get("code_requested"):
+        return redirect("forgot_password")
+
+    form = VerifyCodeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = request.session.get("login_code")
+        if data and time.time() < data["expires"] and data["attempts"] < MAX_ATTEMPTS:
+            data["attempts"] += 1
+            request.session["login_code"] = data  # re-save so the change persists
+            if secrets.compare_digest(form.cleaned_data["code"], data["code"]):
+                user = User.objects.get(pk=data["user_id"])
+                request.session.pop("login_code", None)
+                request.session.pop("code_requested", None)
+                login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+                return redirect(settings.LOGIN_REDIRECT_URL)
+        form.add_error("code", "Invalid or expired code.")
+    return render(request, "crate/verify_code.html", {"form": form})

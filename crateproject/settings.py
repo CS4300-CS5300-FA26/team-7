@@ -153,3 +153,37 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL that handles the media served from MEDIA_ROOT.
 MEDIA_URL = '/media/'
+
+#######################################
+#forgot password
+#######################################
+import os
+
+# --- Email ---
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+
+if GMAIL_APP_PASSWORD:
+    # Real sending (set GMAIL_APP_PASSWORD locally or as a Heroku config var)
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {
+                "host": "smtp.gmail.com",
+                "port": 587,
+                "use_tls": True,
+                "username": "noreply.crate@gmail.com",
+                "password": GMAIL_APP_PASSWORD,
+            },
+        },
+    }
+else:
+    # No password set: print emails to the runserver terminal instead
+    MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
+
+DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
+
+# --- Heroku-friendly basics (only needed when you deploy) ---
+DEBUG = os.environ.get("DEBUG", "True") == "True"   # set DEBUG=False on Heroku
+SECRET_KEY = os.environ.get("SECRET_KEY", SECRET_KEY)  # keeps your existing key locally
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app)"]
+CSRF_TRUSTED_ORIGINS = ["hhttps://www.crate-music.app)"]
