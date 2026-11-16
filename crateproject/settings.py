@@ -184,6 +184,5 @@ DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
 
 # --- Heroku-friendly basics (only needed when you deploy) ---
 DEBUG = os.environ.get("DEBUG", "True") == "True"   # set DEBUG=False on Heroku
-SECRET_KEY = os.environ.get("SECRET_KEY", SECRET_KEY)  # keeps your existing key locally
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app)"]
 CSRF_TRUSTED_ORIGINS = ["hhttps://www.crate-music.app)"]
