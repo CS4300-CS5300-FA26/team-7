@@ -10,3 +10,4 @@ class SongForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # The model allows songs without audio (e.g. via admin), but the upload page needs a file.
         self.fields['audio_file'].required = True
+        

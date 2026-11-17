@@ -83,6 +83,7 @@
 									<div data-song data-song-id="{{ song.id }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}" data-url="{{ song.audio_file.url }}">
 										<button type="button" class="btn btn-sm btn-primary" data-queue-action="play" title="Play {{ song.title }}"><i class="fa-solid fa-play"></i> Play</button>
 										<button type="button" class="btn btn-sm btn-outline-secondary" data-queue-action="add" title="Add {{ song.title }} to the queue"><i class="fa-solid fa-list"></i> Queue</button>
+										<button type="button" class="btn btn-sm btn-outline-secondary" data-queue-action="edit" title="Edit {{ song.title }}"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
 									</div>
 									{% else %}
 									<em>No audio file</em>

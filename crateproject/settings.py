@@ -22,12 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-e7pnque^&mqnuzw@cj^6d7=_#)!&*43lun!g(6ewc4l+jfq261")
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", 
+                            "django-insecure-e7pnque^&mqnuzw@cj^6d7=_#)!&*43lun!g(6ewc4l+jfq261")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "") == "True"
 
-ALLOWED_HOSTS = [".herokuapp.com", "www.crate-music.app", "crate-music.app", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [".herokuapp.com", "www.crate-music.app", 
+                 "crate-music.app", "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app", "https://crate-music.app"]
 

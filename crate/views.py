@@ -2,10 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from .forms import SongForm
-
-from crate.models import Song, Playlist, read_audio_metadata
-
 from django.db.models import Case, F, IntegerField, Q, When, Value
 from django.db.models.functions import Lower, Coalesce
 
@@ -17,17 +13,19 @@ from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 
 
 # we will use this when setting up authentication through Django accounts
-from django.contrib.auth.decorators import login_required
+
+from crate.models import Song, Playlist, read_audio_metadata
+from .forms import SongForm
 
 # ============ VIEWS ==============
 
 def home_view(request):
     return render(request, 'crate/home.html')
 
-# Handles new-user registration.
-# On POST: validates the submitted signup form; if valid, creates the user,
-# logs them in immediately, and sends them to the homepage.
-# On GET (or invalid form): shows a blank/re-rendered signup form.
+''' Handles new-user registration.
+ On POST: validates the submitted signup form; if valid, creates the user,
+ logs them in immediately, and sends them to the homepage.
+ On GET (or invalid form): shows a blank/re-rendered signup form. '''
 def signup_view(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -47,9 +45,10 @@ LENGTH_BUCKETS = {
     "long": (301, None),
 }
 
-# Displays the logged-in user's own songs as a list.
-# Login required — only authenticated users can view it, and nobody sees
-# anyone else's songs.
+''' 
+Displays the logged-in user's own songs as a list.
+Login required — only authenticated users can view it, and nobody sees
+anyone else's songs. '''
 @login_required
 def song_list(request):
     # grab this user's songs from the database store it in songs
@@ -97,9 +96,9 @@ def song_list(request):
         'current_length': length,
     })
 
-# Displays the user's playlists (newest first) plus the user's song list.
-# The playlists populate the page's table; the songs feed the
-# "Create Playlist" popup's song picker. Login required.
+''' Displays the user's playlists (newest first) plus the user's song list.
+ The playlists populate the page's table; the songs feed the
+ "Create Playlist" popup's song picker. Login required. '''
 @login_required
 def playlists(request):
     playlists = Playlist.objects.filter(user=request.user).order_by('-created_at')
@@ -109,23 +108,25 @@ def playlists(request):
         'songs': songs,
     })
 
-# Handles the "Create Playlist" form submission (POST only).
-# Reads the playlist name and the set of checked song IDs, creates the
-# playlist, then attaches the selected songs via the M:N relationship.
-# Redirects back to the playlists page when done.
+
+'''
+ Handles the "Create Playlist" form submission (POST only).
+ Reads the playlist name and the set of checked song IDs, creates the
+ playlist, then attaches the selected songs via the M:N relationship.
+ Redirects back to the playlists page when done. '''
 @require_POST
 @login_required
 def create_playlist(request):
     name = request.POST.get('name', '').strip()
     song_ids = request.POST.getlist('songs')    # all checked boxes named "songs"
     if name:
-        playlist = Playlist.objects.create(name=name, user=request.user)   # save first - needed for M:N
+        playlist = Playlist.objects.create(name=name, user=request.user) 
         # only the user's own songs can be attached, whatever ids were submitted
         song_ids = [i for i in song_ids if i.isdigit()]
         playlist.songs.set(Song.objects.filter(user=request.user, id__in=song_ids))
     return redirect('playlists')
 
-#Allows viewing a playlist
+''' Allows viewing a playlist. Takes in request and playlist id '''
 @login_required
 def playlist_detail(request, playlist_id):
     #Searches for playlist from id and returns a 404 error if not found
@@ -146,7 +147,7 @@ def playlist_detail(request, playlist_id):
         'available_songs': available_songs,
     })
 
-#Allows adding a song to playlist
+''' Allows adding a song to playlist '''
 @login_required
 @require_POST
 def add_song_to_playlist(request, song_id):
@@ -166,7 +167,7 @@ def add_song_to_playlist(request, song_id):
     
     return redirect('song_list')
 
-#Allows removing a song from playlist without deleting the song itself
+'''Allows removing a song from playlist without deleting the song itself '''
 @login_required
 @require_POST
 def remove_song_from_playlist(request, playlist_id, song_id):
@@ -181,8 +182,8 @@ def remove_song_from_playlist(request, playlist_id, song_id):
     #Returns user to playlist detail page
     return redirect('playlist_detail', playlist_id=playlist.id)
 
-# Renders the user's account page. Placeholder — no data wired up yet.
-# Renders the user's account page. Handles user password change
+
+''' Renders the user's account page. Handles user password change '''
 @login_required
 def my_account(request):
     form = None
@@ -205,11 +206,12 @@ def my_account(request):
     # renders template and passes the form
     return render(request, 'crate/my_account.html', {'form': form})
 
-# Renders the recommendations page. Placeholder — no data wired up yet.
+''' Renders the recommendations page. Placeholder — no data wired up yet. '''
 @login_required
 def recommendations(request):
     return render(request, 'crate/recommendations.html')
 
+'''Upload a song to crate'''
 @login_required
 def upload_song(request):
     if request.method == 'POST':
@@ -224,10 +226,10 @@ def upload_song(request):
         form = SongForm()
     return render(request, 'crate/upload_song.html', {'form': form})
 
-
-# Called by the upload page's JavaScript as soon as a file is chosen. Reads the
-# file's tags (title/artist/album/genre) and returns them as JSON so the form
-# can be pre-filled. Nothing is saved here.
+'''
+Called by the upload page's JavaScript as soon as a file is chosen. Reads the
+file's tags (title/artist/album/genre) and returns them as JSON so the form
+can be pre-filled. Nothing is saved here. '''
 @login_required
 @require_POST
 def song_metadata(request):
