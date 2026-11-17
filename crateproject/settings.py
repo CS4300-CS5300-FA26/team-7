@@ -160,6 +160,7 @@ MEDIA_URL = '/media/'
 import os
 
 # --- Email ---
+# gets the password for the noreply email account
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
 
 if GMAIL_APP_PASSWORD:
@@ -181,8 +182,5 @@ else:
     MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
 
 DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
-
-# --- Heroku-friendly basics (only needed when you deploy) ---
-DEBUG = os.environ.get("DEBUG", "True") == "True"   # set DEBUG=False on Heroku
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app)"]
 CSRF_TRUSTED_ORIGINS = ["hhttps://www.crate-music.app)"]
