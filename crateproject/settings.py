@@ -182,5 +182,5 @@ else:
     MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
 
 DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app)"]
-CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app)"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app"]
+CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app"]
