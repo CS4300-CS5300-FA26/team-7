@@ -3,7 +3,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from crate.models import Song
+
 from .helpers import STRONG_PASSWORD
+
+from unittest.mock import patch
 
 User = get_user_model()
 
@@ -24,6 +27,11 @@ class SearchViewTests(TestCase):
                 minutes=minutes, seconds=seconds, user=self.user,
             )
         self.client.force_login(self.user)
+        # The search view now also queries MusicBrainz; these tests cover the
+        # LOCAL search/sort behavior, so stub the web call out.
+        patcher = patch("crate.views.musicbrainz.search_songs", return_value=[])
+        self.addCleanup(patcher.stop)
+        patcher.start()
 
     def titles(self, **params):
         response = self.client.get(self.url, params)
