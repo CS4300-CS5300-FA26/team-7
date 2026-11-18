@@ -15,7 +15,7 @@ def search_songs(query, *, limit=15, timeout=10):
 
     Raises requests.RequestException on network/HTTP errors.
     """
-    params = {"query": query, "fmt": "json", "limit": limit}
+    params = {"query": query, "fmt": "json", "limit": limit, "dismax": "true"}
     headers = {"User-Agent": USER_AGENT}
     response = requests.get(SEARCH_URL, params=params, headers=headers, timeout=timeout)
     response.raise_for_status()
