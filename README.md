@@ -29,6 +29,8 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 
 - Sprint 3: Claude - Helped with forgot password implimentation and tests
 - Sprint 3: ChatGPT Edu - Helped add album art and edit song details
+- Sprint 3: Claude - Helped me pick an API and refactor the search feature to query it.
+- Sprint 3: Claude - Helped with all tests regarding the Search feature and API
 
 ## Dev Guide To Run The App
 
