@@ -42,3 +42,18 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 - Click on link produced by runserver command
 
 ## [Deployed Webapp link](https://www.crate-music.app)
+
+### Song cover art on Cloudinary
+
+Song cover images use `MediaCloudinaryStorage` and audio uses
+`VideoMediaCloudinaryStorage`. Set `CLOUDINARY_URL` in the environment
+(e.g. Heroku config vars) using your Cloudinary account's credentials.
+Never commit the real URL or API secret. Run `python manage.py migrate`
+when deploying. New or replacement cover uploads are stored on Cloudinary,
+so thumbnails in the song list and playlists survive dyno restarts.
+
+**Existing covers:** This change does not automatically migrate images
+previously saved to local `media/covers/`. If those files still exist,
+re-upload them through Edit Song after deployment. If they were lost on
+Heroku's ephemeral filesystem, obtain the originals and re-upload.
+Changing the storage backend alone does not transfer existing images.
