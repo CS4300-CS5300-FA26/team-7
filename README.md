@@ -1,4 +1,5 @@
 # Crate
+
 ## CS 4300 - Team 7
 
 Crate is an online personal audio storage platform where you can store (copyright-free) media and access it anywhere.
@@ -6,7 +7,6 @@ Crate is an online personal audio storage platform where you can store (copyrigh
 [![Django Tests](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/django.yml)
 [![Coverage](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/coverage.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/coverage.yml)
 [![Behave Tests](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/behave-tests.yml/badge.svg)](https://github.com/CS4300-CS5300-FA26/team-7/actions/workflows/behave-tests.yml)
-
 
 ## AI Usage
 
