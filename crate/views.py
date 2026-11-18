@@ -1,3 +1,5 @@
+import requests
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -5,6 +7,7 @@ from django.views.decorators.http import require_POST
 from .forms import SongForm
 
 from crate.models import Song, Playlist, read_audio_metadata
+from crate import musicbrainz
 
 from django.db.models import Case, F, IntegerField, Q, When, Value
 from django.db.models.functions import Lower, Coalesce
@@ -14,7 +17,6 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
-
 
 # we will use this when setting up authentication through Django accounts
 from django.contrib.auth.decorators import login_required
@@ -276,6 +278,13 @@ def sort_songs(songs, sort, direction):
 
     return songs.order_by(*primary, Lower('title'), 'id')
 
+# A royalty-free track played for web results (songs the user doesn't own).
+# Set this to your Cloudinary-hosted royalty-free audio in step 4.
+ROYALTY_FREE_AUDIO_URL = "https://res.cloudinary.com/oxvrky66/video/upload/v1792950032/media/audio/Bennets_Conquest_nnadly.mp3"
+
+def _normalize(text):
+    return (text or "").strip().lower()
+
 @login_required
 def search(request):
     songs = Song.objects.filter(user=request.user)
@@ -293,10 +302,30 @@ def search(request):
     direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
     songs = sort_songs(songs, sort, direction) if sort else songs.order_by('id')
 
+    # Web results from MusicBrainz, only when the user actually searched.
+    # Songs the user already owns are skipped here (they appear above with
+    # their real audio); everything else gets a royalty-free sample.
+    web_results = []
+    web_error = False 
+    if q:
+        owned = {(_normalize(s.title), _normalize(s.artist)) for s in songs}
+        try:
+            for result in musicbrainz.search_songs(q):
+                key = (_normalize(result['title']), _normalize(result['artist']))
+                if key in owned:
+                    continue
+                result['source'] = 'web'
+                result['audio_url'] = ROYALTY_FREE_AUDIO_URL
+                web_results.append(result)
+        except requests.RequestException:
+            web_error = True 
+
     return render(request, 'crate/search.html', {
         'songs': songs,
         'q': q,
         'sort_choices': SORT_CHOICES,
         'current_sort': sort,
         'current_dir': direction,
+        'web_results': web_results,
+        'web_error': web_error,
     })

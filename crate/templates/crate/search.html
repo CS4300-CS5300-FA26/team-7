@@ -96,10 +96,48 @@
             {% endfor %}
         </tbody>
     </table>
-    {% elif q %}
-    <p>No songs match your search.</p>
-    {% else %}
-    <p>No songs are currently available.</p>
+    {% endif %}
+
+    {% if web_results %}
+    <h2 class="h5 mt-4">From the Web</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Length</th>
+                <th>Play</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in web_results %}
+            <tr>
+                <td>{{ r.title }}</td>
+                <td> {{ r.artist }}</td>
+                <td>{{ r.album }}</td>
+                <td>{{ r.length }}</td>
+                <td>
+                    <audio controls preload="none" src="{{ r.audio_url }}"
+                        title="Royalty-free sample for {{ r.title }}"></audio>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted small">Web results play a royalty-free sample, not the original recording</p>
+    {% endif %}
+
+    {% if web_error %}
+    <p class="text-muted">Couldn't reach the web music database right now; showing you your library only.</p>
+    {% endif %}
+    
+    {% if not songs and not web_results %}
+        {% if q %}
+        <p>No songs match your search.</p>
+        {% else %}
+        <p>No songs are currently available.</p>
+        {% endif %}
     {% endif %}
 </div>
 <script>
