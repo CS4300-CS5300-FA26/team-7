@@ -69,7 +69,15 @@ urlpatterns = [
        
     
     # Simple homepage target
-    path('', views.home_view, name='home')
+    path('', views.home_view, name='home'),
+
+
+    #######################################
+    #forgot password
+    #######################################
+
+    path("forgot-password/", views.forgot_password, name="forgot_password"),
+    path("verify-code/", views.verify_code, name="verify_code")
 ]
 
 #serve media files statically during local development
