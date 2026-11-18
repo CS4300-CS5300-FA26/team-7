@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-Django==6.1.1
+Django==6.1.3
 djangorestframework==3.18.2
 gunicorn
 whitenoise
@@ -15,20 +14,4 @@ selenium==4.52.0
 flaky
 pylint
 Pillow>=11.0
-=======
-Django==6.1.3
-djangorestframework==3.18.2
-gunicorn
-whitenoise
-dj-database-url
-psycopg2-binary
-mutagen>=1.47.0
-cloudinary
-django-cloudinary-storage
-python-dotenv
-coverage
-behave-django
-selenium==4.52.0
-flaky
 requests
->>>>>>> b2185c04d9ca53c5ccedf258f7d9887e3dfbcf3f
