@@ -155,3 +155,33 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL that handles the media served from MEDIA_ROOT.
 MEDIA_URL = '/media/'
+
+#######################################
+#forgot password
+#######################################
+
+# --- Email ---
+# gets the password for the noreply email account
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+
+if GMAIL_APP_PASSWORD:
+    # Real sending (set GMAIL_APP_PASSWORD locally or as a Heroku config var)
+    MAILERS = {
+        "default": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {
+                "host": "smtp.gmail.com",
+                "port": 587,
+                "use_tls": True,
+                "username": "noreply.crate@gmail.com",
+                "password": GMAIL_APP_PASSWORD,
+            },
+        },
+    }
+else:
+    # No password set: print emails to the runserver terminal instead
+    MAILERS = {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}
+
+DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app"]
+CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app"]

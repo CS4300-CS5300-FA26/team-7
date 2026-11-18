@@ -1,5 +1,5 @@
 Django==6.1.1
-djangorestframework==3.18.1
+djangorestframework==3.18.2
 gunicorn
 whitenoise
 dj-database-url

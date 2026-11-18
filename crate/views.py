@@ -1,3 +1,13 @@
+# Errors to logs
+import logging
+# security 
+import secrets
+# check expiration
+import time
+
+from django.conf import settings
+from django.core.mail import send_mail
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -7,15 +17,13 @@ from django.db.models.functions import Lower, Coalesce
 
 #Imports for my_account view
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash, login
+from django.contrib.auth import update_session_auth_hash, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 
 
-# we will use this when setting up authentication through Django accounts
-
 from crate.models import Song, Playlist, read_audio_metadata
-from .forms import SongForm
+from .forms import SongForm, ForgotPasswordForm, VerifyCodeForm
 
 # ============ VIEWS ==============
 
@@ -302,3 +310,116 @@ def search(request):
         'current_sort': sort,
         'current_dir': direction,
     })
+
+
+
+#######################################
+#forgot password
+#######################################
+
+
+
+# get model and set logger for the file
+User = get_user_model()
+logger = logging.getLogger(__name__)
+
+# makes code valid for 10 minutes, and gives 5 attempts to type code
+CODE_LIFETIME = 600   # seconds
+MAX_ATTEMPTS = 5
+
+
+# view for the forgot password page (email entry)
+def forgot_password(request):
+    # get the users form submission
+    form = ForgotPasswordForm(request.POST or None)
+    # if the form was submitted and valid
+    if request.method == "POST" and form.is_valid():
+        # get (first) user associated with the email
+        user = User.objects.filter(
+            email__iexact=form.cleaned_data["email"], is_active=True
+        ).first()
+        # if an account was found continue
+        if user:
+            # get rand number from 0 to 999999 (integer value, 6 characters wide, and if shorter pad with 0's)
+            code = f"{secrets.randbelow(10**6):06d}"
+            # store code details
+            request.session["login_code"] = {
+                "user_id": user.pk,
+                "code": code,
+                "expires": time.time() + CODE_LIFETIME,
+                "attempts": 0,
+            }
+
+            # try sending email if fails catches
+            try:
+                send_mail(
+                    "Your Crate login code",
+                    f"Your login code is {code}.\n\n"
+                    "It expires in 10 minutes. If you didn't request this, ignore this email.",
+                    None,  # uses DEFAULT_FROM_EMAIL
+                    [user.email],
+                )
+            except Exception:
+                # Log it, but show the same page so we don't reveal which emails exist
+                logger.exception("Failed to send login code email")
+        # sets flag used in verify_code saying that the form was submitted
+        request.session["code_requested"] = True
+        # go to verification page
+        return redirect("verify_code")
+    # form not valid 
+    return render(request, "crate/forgot_password.html", {"form": form})
+
+# view for the code entry page
+def verify_code(request):
+
+    # redirect user if they didn't enter a email
+    if not request.session.get("code_requested"):
+        return redirect("forgot_password")
+
+    # get the form submission
+    form = VerifyCodeForm(request.POST or None)
+    # continue if the form is valid
+    if request.method == "POST" and form.is_valid():
+        # get the code
+        data = request.session.get("login_code")
+        # if there is a code, within time, an within attempts continue
+        if data and time.time() < data["expires"] and data["attempts"] < MAX_ATTEMPTS:
+            data["attempts"] += 1
+            request.session["login_code"] = data  # re-save so the change persists
+            # compare the codes if matching login as user associated with code
+            if secrets.compare_digest(form.cleaned_data["code"], data["code"]):
+                # get user
+                user = User.objects.get(pk=data["user_id"])
+                #  delete code
+                request.session.pop("login_code", None)
+                # delete flag for user email form submission
+                request.session.pop("code_requested", None)
+                # log user in
+                login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+                # go to home page
+                return redirect(settings.LOGIN_REDIRECT_URL)
+        # if something went wrong with code display error
+        form.add_error("code", "Invalid or expired code.")
+    #display the form (first view or error)
+    return render(request, "crate/verify_code.html", {"form": form})
+
+
+
+#######################################
+# Edit song details
+#######################################
+
+@login_required
+def edit_song(request, song_id):
+    song = get_object_or_404(Song, id=song_id, user=request.user)
+    if request.method == 'POST':
+        
+        # Song.clean()/save() read the audio file, validate it, and set minutes/seconds
+        if form.is_valid():
+            song = form.save(commit=False)
+            song.user = request.user   # the uploader owns the song
+            song.save()
+            return redirect('song_list')
+    else:
+        form = SongForm()
+    return render(request, 'crate/upload_song.html', {'form': form})
