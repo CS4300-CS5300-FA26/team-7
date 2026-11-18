@@ -353,6 +353,12 @@
             say(added.length === 1 ? 'Added to the queue.' : 'Added ' + added.length + ' songs to the queue.');
         }
 
+        function editSong(item){
+            console.log(item);
+        }
+
+
+
         function replaceQueue(items) {
             if (!items.length) { say('No playable songs here.'); return; }
             queue = items.slice(0, MAX_ITEMS);
@@ -474,11 +480,24 @@
             var button = event.target.closest ? event.target.closest('[data-queue-action]') : null;
             if (!button) { return; }
             var action = button.dataset.queueAction;
-            if (action === 'play' || action === 'add') {
+            if (action === 'play' || action === 'add' || action === 'edit') {
                 var songEl = button.closest('[data-song]');
                 var item = songEl ? itemFromElement(songEl) : null;
                 if (!item) { return; }
-                if (action === 'play') { playNow(item); } else { enqueue([item]); }
+                switch(action){
+                    case 'play':
+                        playNow(item); 
+                        break;
+                    case 'add':
+                        enqueue([item]);
+                        break;
+                    case 'edit':
+                        editSong(item);
+                        break;
+                    default:
+                        return;
+                }
+                
             } else if (action === 'play-all' || action === 'add-all') {
                 var items = itemsFromScope(button.dataset.queueScope);
                 if (action === 'add-all') { enqueue(items); } else { replaceQueue(items); }

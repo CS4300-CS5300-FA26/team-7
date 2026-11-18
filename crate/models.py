@@ -91,6 +91,8 @@ class Song(models.Model):
     artist = models.CharField(max_length=200)
     genre = models.CharField(max_length=200, blank=True)
     album = models.CharField(max_length=200, blank=True)
+    year = models.PositiveIntegerField(null=True, blank=True)
+    cover = models.ImageField(upload_to="covers/", null=True, blank=True)
  
     # The user who uploaded the song. Users only ever see their own songs.
     # (null=True so songs that existed before this field was added still load;
@@ -105,10 +107,11 @@ class Song(models.Model):
     minutes = models.PositiveIntegerField(null=True, blank=True)
     seconds = models.PositiveIntegerField(null=True, blank=True)
         
-    audio_file = models.FileField(upload_to="audio/", default='', blank=True, null=True, storage=VideoMediaCloudinaryStorage())
+    audio_file = models.FileField(upload_to="audio/", default='', blank=True, 
+                                  null=True, storage=VideoMediaCloudinaryStorage())
  
     def __str__(self):
-        return f"{self.title} — {self.artist}"
+        return str(f"{self.title} — {self.artist}")
         # ---- duration handling ----
  
     def _has_new_audio(self):

@@ -43,6 +43,13 @@ urlpatterns = [
         name='add_song_to_playlist',
     ),
 
+    #For editing a song
+    path(
+        'songs/<int:song_id>/edit/',
+        views.edit_song,
+        name='edit_song',
+    ),
+
     #For Playlist detail
     path(
         'playlists/<int:playlist_id>/',

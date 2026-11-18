@@ -1,0 +1,6 @@
+{# Shared thumbnail for song tables; a placeholder is shown when no art is uploaded. #}
+{% if song.cover %}
+<img src="{{ song.cover.url }}" alt="Cover art for {{ song.title }}" width="48" height="48" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:6px;vertical-align:middle;">
+{% else %}
+<span role="img" aria-label="No cover art for {{ song.title }}" style="display:inline-flex;width:48px;height:48px;align-items:center;justify-content:center;background:#e9ecef;color:#6c757d;border-radius:6px;vertical-align:middle;"><i class="fa-solid fa-music" aria-hidden="true"></i></span>
+{% endif %}
