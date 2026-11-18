@@ -32,7 +32,7 @@
                             </td>
                             <td>
                                 {% for song in playlist.songs.all %}
-                                    {{ song.title }}{% if not forloop.last %}, {% endif %}
+                                    <span class="d-inline-flex align-items-center gap-1 me-2 mb-1">{% include "crate/_song_cover.html" %}<span>{{ song.title }}</span></span>
                                 {% empty %}
                                     <em>empty</em>
                                 {% endfor %}

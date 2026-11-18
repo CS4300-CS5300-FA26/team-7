@@ -23,7 +23,7 @@ from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 
 
 from crate.models import Song, Playlist, read_audio_metadata
-from .forms import SongForm, ForgotPasswordForm, VerifyCodeForm
+from .forms import SongForm, EditSongForm, ForgotPasswordForm, VerifyCodeForm
 
 # ============ VIEWS ==============
 
@@ -413,13 +413,11 @@ def verify_code(request):
 def edit_song(request, song_id):
     song = get_object_or_404(Song, id=song_id, user=request.user)
     if request.method == 'POST':
-        
-        # Song.clean()/save() read the audio file, validate it, and set minutes/seconds
+        form = EditSongForm(request.POST, request.FILES, instance=song)
         if form.is_valid():
-            song = form.save(commit=False)
-            song.user = request.user   # the uploader owns the song
-            song.save()
+            form.save()
+            messages.success(request, 'Song details updated.')
             return redirect('song_list')
     else:
-        form = SongForm()
-    return render(request, 'crate/upload_song.html', {'form': form})
+        form = EditSongForm(instance=song)
+    return render(request, 'crate/edit_song.html', {'form': form, 'song': song})

@@ -25,6 +25,7 @@
     <table class="table table-striped">
         <thead>
             <tr>
+                <th>Cover</th>
                 <th>Title</th>
                 <th>Artist</th>
                 <th>Album</th>
@@ -35,6 +36,7 @@
         <tbody>
             {% for song in songs %}
             <tr>
+                <td>{% include "crate/_song_cover.html" %}</td>
                 <td>{{ song.title }}</td>
                 <td>{{ song.artist }}</td>
                 <td>{{ song.album|default:"—" }}</td>
@@ -74,6 +76,7 @@
     <table class="table table-striped">
         <thead>
             <tr>
+                <th>Cover</th>
                 <th>Title</th>
                 <th>Artist</th>
                 <th>Action</th>
@@ -82,6 +85,7 @@
         <tbody>
             {% for song in available_songs %}
             <tr>
+                <td>{% include "crate/_song_cover.html" %}</td>
                 <td>{{ song.title }}</td>
                 <td>{{ song.artist }}</td>
                 <td>

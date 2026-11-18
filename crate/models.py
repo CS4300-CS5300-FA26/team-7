@@ -91,6 +91,8 @@ class Song(models.Model):
     artist = models.CharField(max_length=200)
     genre = models.CharField(max_length=200, blank=True)
     album = models.CharField(max_length=200, blank=True)
+    year = models.PositiveIntegerField(null=True, blank=True)
+    cover = models.ImageField(upload_to="covers/", null=True, blank=True)
  
     # The user who uploaded the song. Users only ever see their own songs.
     # (null=True so songs that existed before this field was added still load;

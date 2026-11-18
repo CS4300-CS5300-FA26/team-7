@@ -14,7 +14,13 @@ class SongForm(forms.ModelForm):
 class EditSongForm(forms.ModelForm):
     class Meta:
         model = Song
-        fields = ['title', 'artist', 'genre', 'album', 'audio_file']
+        fields = ['title', 'artist', 'genre', 'album', 'year', 'cover']
+
+    def clean_year(self):
+        year = self.cleaned_data.get('year')
+        if year is not None and not 1000 <= year <= 9999:
+            raise forms.ValidationError('Enter a four-digit release year.')
+        return year
 
 #######################################
 #forgot password
