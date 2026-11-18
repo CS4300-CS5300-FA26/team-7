@@ -122,8 +122,9 @@
 									{% endif %}
 								</div>
 							</td>
+							<td><a class="btn btn-sm btn-outline-secondary mb-2" href="{% url 'edit_song' song.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit</a></td>
 							<td>
-                                <a class="btn btn-sm btn-outline-secondary mb-2" href="{% url 'edit_song' song.id %}"><i class="fa-regular fa-pen-to-square"></i> Edit</a>
+                                
             					<form action="{% url 'song_delete' song.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete &quot;{{ song.title }}&quot;?');">
 									{% csrf_token %}
 					                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-can"></i>Delete</button>
