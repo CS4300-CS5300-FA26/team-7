@@ -4,7 +4,7 @@ gunicorn
 whitenoise
 dj-database-url
 psycopg2-binary
-mutagen>=1.47.0
+mutagen>=1.48.1
 cloudinary
 django-cloudinary-storage
 python-dotenv
