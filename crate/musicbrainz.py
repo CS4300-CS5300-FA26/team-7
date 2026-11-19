@@ -10,16 +10,17 @@ import requests
 SEARCH_URL = "https://musicbrainz.org/ws/2/recording"
 USER_AGENT = "Crate/1.0 ( https://www.crate-music.app )"
 
-def search_songs(query, *, limit=15, timeout=10):
+def search_songs(query, *, limit=20, offset = 0, timeout=10):
     """Return a list of song-metadata dicts matching `query`.
 
     Raises requests.RequestException on network/HTTP errors.
     """
-    params = {"query": query, "fmt": "json", "limit": limit, "dismax": "true"}
+    params = {"query": query, "fmt": "json", "limit": limit, "offset": offset, "dismax": "true"}
     headers = {"User-Agent": USER_AGENT}
     response = requests.get(SEARCH_URL, params=params, headers=headers, timeout=timeout)
     response.raise_for_status()
-    return _parse(response.json())
+    data = response.json()
+    return _parse(data), data.get("count", 0)
 
 def _parse(data):
     songs = []

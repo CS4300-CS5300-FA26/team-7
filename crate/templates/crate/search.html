@@ -132,6 +132,40 @@
     <p class="text-muted">Couldn't reach the web music database right now; showing you your library only.</p>
     {% endif %}
     
+    {% if songs or web_results %}
+    <nav class="d-flex justify-content-center align-items-center gap-3 my-4" aria-label="Search pages">
+        {% if has_prev %}
+        <a class="btn btn-outline-primary" href="?{{ base_query }}&page={{ prev_page }}">
+            <i class="fa-solid fa-chevron-left"></i> Previous
+        </a>
+        {% else %}
+        <a class="btn btn-outline-primary disabled" aria-disabled="true">
+            <i class="fa-solid fa-chevron-left"></i> Previous
+        </a>
+        {% endif %}
+    
+        <form method="get" action="{% url 'search' %}" class="d-flex align-items-center gap-2 mb-0">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+            {% if current_sort %}<input type="hidden" name="sort" value="{{ current_sort }}">{% endif %}
+            <input type="hidden" name="dir" value="{{ current_dir }}">
+            <input type="number" name="page" value="{{ page }}" min="1" max="{{ total_pages }}"
+                class="form-control text-center" style="width: 80px;" aria-label="Jump to page"
+                onchange="this.form.submit()">
+            <span class="text-nowrap">of {{ total_pages }}</span>
+        </form>
+    
+        {% if has_next %}
+        <a class="btn btn-outline-primary" href="?{{ base_query }}&page={{ next_page }}">
+            Next <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        {% else %}
+        <a class="btn btn-outline-primary disabled" aria-disabled="true">
+            Next <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
     {% if not songs and not web_results %}
         {% if q %}
         <p>No songs match your search.</p>

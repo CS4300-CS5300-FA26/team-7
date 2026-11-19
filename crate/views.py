@@ -26,6 +26,7 @@ from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 from crate.models import Song, Playlist, read_audio_metadata
 from crate import musicbrainz
 from .forms import SongForm, EditSongForm, ForgotPasswordForm, VerifyCodeForm
+from urllib.parse import urlencode
 
 # ============ VIEWS ==============
 
@@ -295,6 +296,10 @@ ROYALTY_FREE_AUDIO_URL = "https://res.cloudinary.com/oxvrky66/video/upload/v1792
 def _normalize(text):
     return (text or "").strip().lower()
 
+RESULTS_PER_PAGE = 20
+MAX_WEB_RESULTS = 500   # MusicBrainz only allows for 500 results at most
+MAX_WEB_PAGES = MAX_WEB_RESULTS // RESULTS_PER_PAGE
+
 @login_required
 def search(request):
     songs = Song.objects.filter(user=request.user)
@@ -312,32 +317,78 @@ def search(request):
     direction = 'desc' if request.GET.get('dir') == 'desc' else 'asc'
     songs = sort_songs(songs, sort, direction) if sort else songs.order_by('id')
 
+    try:
+        page = max(1, int(request.GET.get('page', 1)))
+    except ValueError:
+        page = 1
+
+    owned_total = songs.count()
+    owned_pages = -(-owned_total // RESULTS_PER_PAGE)
+    owned = {(_normalize(t), _normalize(a)) for t, a in songs.values_list('title', 'artist')}
+
     # Web results from MusicBrainz, only when the user actually searched.
     # Songs the user already owns are skipped here (they appear above with
     # their real audio); everything else gets a royalty-free sample.
     web_results = []
     web_error = False 
+    web_pages = 0
+
+    def fetch_web(page_num):
+        results, total = musicbrainz.search_songs(
+            q, limit=RESULTS_PER_PAGE, offset=(page_num - 1) * RESULTS_PER_PAGE
+        )
+        filtered = []
+        for result in results:
+            key = (_normalize(result['title']), _normalize(result['artist']))
+            if key in owned:
+                continue
+            result['source'] = 'web'
+            result['audio_url'] = ROYALTY_FREE_AUDIO_URL
+            filtered.append(result)
+        return filtered, min(-(-total // RESULTS_PER_PAGE), MAX_WEB_PAGES)
+
     if q:
-        owned = {(_normalize(s.title), _normalize(s.artist)) for s in songs}
-        try:
-            for result in musicbrainz.search_songs(q):
-                key = (_normalize(result['title']), _normalize(result['artist']))
-                if key in owned:
-                    continue
-                result['source'] = 'web'
-                result['audio_url'] = ROYALTY_FREE_AUDIO_URL
-                web_results.append(result)
-        except requests.RequestException:
-            web_error = True 
+        if page <= MAX_WEB_PAGES:
+            try:
+                web_results, web_pages = fetch_web(page)
+            except requests.RequestException:
+                web_error = True
+        else:
+            web_pages = MAX_WEB_PAGES
+
+    total_pages = max(owned_pages, web_pages, 1)
+
+    if page > total_pages:
+        page = total_pages
+        if q and not web_error:
+            try:
+                web_results, _ = fetch_web(page)
+            except requests.RequestException:
+                web_error = True
+                web_results = []
+
+    start = (page - 1) * RESULTS_PER_PAGE
+    owned_page = songs[start:start + RESULTS_PER_PAGE]
+
+    base_query = urlencode({
+        k: v for k, v in {'q': q, 'sort': sort, 'dir': direction}.items() if v
+    })
 
     return render(request, 'crate/search.html', {
-        'songs': songs,
+        'songs': owned_page,
         'q': q,
         'sort_choices': SORT_CHOICES,
         'current_sort': sort,
         'current_dir': direction,
         'web_results': web_results,
         'web_error': web_error,
+        'page': page,
+        'total_pages': total_pages,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+        'prev_page': page - 1,
+        'next_page': page + 1,
+        'base_query': base_query,
     })
 
 
