@@ -13,9 +13,9 @@ def before_scenario(context, scenario):
         context._cloud_patch.start()
 
     context._mb_patch = None
-    if "musicbrainz" in scenario.effective_tags:
+    if "web_search" in scenario.effective_tags:
         context._mb_patch = patch(
-            "crate.views.musicbrainz.search_songs",
+            "crate.views.itunes.search_songs",
             return_value=[
                 {"title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "length": "3:58", "mbid": "m1"},
                 {"title": "Karma Police", "artist": "Radiohead", "album": "OK Computer", "length": "4:21", "mbid": "m2"},

@@ -24,7 +24,7 @@ from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 
 
 from crate.models import Song, Playlist, read_audio_metadata
-from crate import musicbrainz
+from crate import itunes
 from .forms import SongForm, EditSongForm, ForgotPasswordForm, VerifyCodeForm
 
 # ============ VIEWS ==============
@@ -320,7 +320,7 @@ def search(request):
     if q:
         owned = {(_normalize(s.title), _normalize(s.artist)) for s in songs}
         try:
-            for result in musicbrainz.search_songs(q):
+            for result in itunes.search_songs(q):
                 key = (_normalize(result['title']), _normalize(result['artist']))
                 if key in owned:
                     continue

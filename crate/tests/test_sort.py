@@ -29,7 +29,7 @@ class SearchViewTests(TestCase):
         self.client.force_login(self.user)
         # The search view now also queries MusicBrainz; these tests cover the
         # LOCAL search/sort behavior, so stub the web call out.
-        patcher = patch("crate.views.musicbrainz.search_songs", return_value=[])
+        patcher = patch("crate.views.itunes.search_songs", return_value=[])
         self.addCleanup(patcher.stop)
         patcher.start()
 
