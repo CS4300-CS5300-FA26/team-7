@@ -21,6 +21,7 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash, login, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
+from django.core.paginator import Paginator
 
 
 from crate.models import Song, Playlist, read_audio_metadata
@@ -320,7 +321,7 @@ def search(request):
     if q:
         owned = {(_normalize(s.title), _normalize(s.artist)) for s in songs}
         try:
-            for result in itunes.search_songs(q):
+            for result in itunes.search_songs(q, limit=200):
                 key = (_normalize(result['title']), _normalize(result['artist']))
                 if key in owned:
                     continue
@@ -330,6 +331,13 @@ def search(request):
         except requests.RequestException:
             web_error = True 
 
+    # Paginate the web results (iTunes caps a query at 200 results).
+    paginator = Paginator(web_results, 10)
+    web_page = paginator.get_page(request.GET.get('page'))
+    page_range = list(paginator.get_elided_page_range(
+        web_page.number, on_each_side=2, on_ends=1
+    ))
+
     return render(request, 'crate/search.html', {
         'songs': songs,
         'q': q,
@@ -337,6 +345,8 @@ def search(request):
         'current_sort': sort,
         'current_dir': direction,
         'web_results': web_results,
+        'web_page': web_page,
+        'page_range': page_range,
         'web_error': web_error,
     })
 
