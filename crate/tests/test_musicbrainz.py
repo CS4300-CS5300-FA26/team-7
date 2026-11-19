@@ -60,7 +60,7 @@ class SearchTests(TestCase):
         resp.raise_for_status.return_value = None 
         mock_get.return_value = resp 
 
-        songs = musicbrainz.search_songs("radiohead creep")
+        songs, total = musicbrainz.search_songs("radiohead creep")
 
         args, kwargs = mock_get.call_args
         self.assertEqual(args[0], musicbrainz.SEARCH_URL)

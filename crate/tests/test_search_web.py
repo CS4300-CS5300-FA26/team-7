@@ -12,10 +12,11 @@ from .helpers import STRONG_PASSWORD
 User = get_user_model()
 
 # What the mocked MusicBrainz client returns
-WEB = [
+WEB_RESULTS = [
     {"title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "length": "3:58", "mbid": "m1"},
     {"title": "Karma Police", "artist": "Radiohead", "album": "OK Computer", "length": "4:21", "mbid": "m2"},
 ]
+WEB = (WEB_RESULTS, len(WEB_RESULTS))
 
 
 class SearchWebResultsTests(TestCase):

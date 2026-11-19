@@ -80,7 +80,7 @@ class PaginationTests(TestCase):
         parsed = parse_qs(self.get(q="Song", sort="title", dir="desc").context["base_query"])
         self.assertEqual(parsed, {"q": ["Song"], "sort": ["title"], "dir": ["desc"]})
         self.assertIn("q=rock+%26+roll", self.get(q="rock & roll").context["base_query"])
-        self.assertEqual(self.get().context["base_query"], "")
+        self.assertEqual(parse_qs(self.get().context["base_query"]), {"dir": ["asc"]})
 
 
 class WebPaginationTests(TestCase):
