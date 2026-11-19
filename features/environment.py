@@ -2,6 +2,11 @@
 # @cloudinary so uploads never hit the network or a real account.
 from unittest.mock import patch
 
+FAKE_WEB_RESULTS = [
+    {"title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "length": "3:58", "mbid": "m1"},
+    {"title": "Karma Police", "artist": "Radiohead", "album": "OK Computer", "length": "4:21", "mbid": "m2"},
+]
+
 
 def before_scenario(context, scenario):
     context._cloud_patch = None 
@@ -16,10 +21,7 @@ def before_scenario(context, scenario):
     if "musicbrainz" in scenario.effective_tags:
         context._mb_patch = patch(
             "crate.views.musicbrainz.search_songs",
-            return_value=[
-                {"title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "length": "3:58", "mbid": "m1"},
-                {"title": "Karma Police", "artist": "Radiohead", "album": "OK Computer", "length": "4:21", "mbid": "m2"},
-            ],
+            return_value=(list(FAKE_WEB_RESULTS), len(FAKE_WEB_RESULTS)),
         )
         context._mb_patch.start()
 
