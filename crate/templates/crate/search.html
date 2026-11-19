@@ -182,13 +182,13 @@
                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% else %}
                 <li class="page-item">
-                    <a class="page_link" href="?q={{ q|urlencode }}&page={{ num }}{% if current_sort %}&sort={{ current_sort }}&dir={{ current_dir }}{% endif %}">{{ num }}</a>
+                    <a class="page-link" href="?q={{ q|urlencode }}&page={{ num }}{% if current_sort %}&sort={{ current_sort }}&dir={{ current_dir }}{% endif %}">{{ num }}</a>
                 </li>
                 {% endif %}
             {% endfor %}
             {% if web_page.has_next %}
             <li class="page-item page-nav">
-                <a class="page_link" href="?q={{ q|urlencode }}&page={{ web_page.next_page_number }}{% if current_sort %}&sort={{ current_sort }}&dir={{ current_dir }}{% endif %}">Next</a>
+                <a class="page-link" href="?q={{ q|urlencode }}&page={{ web_page.next_page_number }}{% if current_sort %}&sort={{ current_sort }}&dir={{ current_dir }}{% endif %}">Next</a>
             </li>
             {% endif %}
         </ul>
