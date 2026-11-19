@@ -11,7 +11,7 @@ from .helpers import STRONG_PASSWORD
 
 User = get_user_model()
 
-# What the mocked MusicBrainz client returns
+# What the mocked Itunes client returns
 WEB = [
     {"title": "Creep", "artist": "Radiohead", "album": "Pablo Honey", "length": "3:58", "mbid": "m1"},
     {"title": "Karma Police", "artist": "Radiohead", "album": "OK Computer", "length": "4:21", "mbid": "m2"},
@@ -24,20 +24,20 @@ class SearchWebResultsTests(TestCase):
         self.client.force_login(self.user)
         self.url = reverse("search")
 
-    @patch("crate.views.musicbrainz.search_songs", return_value=WEB)
+    @patch("crate.views.itunes.search_songs", return_value=WEB)
     def test_web_results_shown_when_searching(self, _mock):
         r = self.client.get(self.url, {"q": "radiohead"})
         titles = [w["title"] for w in r.context["web_results"]]
         self.assertEqual(titles, ["Creep", "Karma Police"])
 
-    @patch("crate.views.musicbrainz.search_songs", return_value=WEB)
+    @patch("crate.views.itunes.search_songs", return_value=WEB)
     def test_web_results_get_royalty_free_url_and_source(self, _mock):
         r = self.client.get(self.url, {"q": "radiohead"})
         w = r.context["web_results"][0]
         self.assertEqual(w["source"], "web")
         self.assertEqual(w["audio_url"], views.ROYALTY_FREE_AUDIO_URL)
 
-    @patch("crate.views.musicbrainz.search_songs", return_value=WEB)
+    @patch("crate.views.itunes.search_songs", return_value=WEB)
     def test_owned_song_is_deduped_from_web_results(self, _mock):
         # Alice owns "Creep" by Radiohead -> it should NOT appear in web_results
         Song.objects.create(title="Creep", artist="Radiohead", genre="Rock",
@@ -47,12 +47,12 @@ class SearchWebResultsTests(TestCase):
         self.assertNotIn("Creep", web_titles)        # shown in library instead
         self.assertIn("Karma Police", web_titles)    # not owned -> still web
 
-    @patch("crate.views.musicbrainz.search_songs", return_value=WEB)
+    @patch("crate.views.itunes.search_songs", return_value=WEB)
     def test_no_api_call_without_a_query(self, mock_search):
         self.client.get(self.url)                    # no q
         mock_search.assert_not_called()
 
-    @patch("crate.views.musicbrainz.search_songs",
+    @patch("crate.views.itunes.search_songs",
            side_effect=views.requests.RequestException("down"))
     def test_api_failure_degrades_gracefully(self, _mock):
         Song.objects.create(title="Mine", artist="Me", genre="Rock",

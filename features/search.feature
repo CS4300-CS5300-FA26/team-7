@@ -1,4 +1,4 @@
-@musicbrainz
+@web_search
 Feature: Searching songs across the library and the web
   As a logged-in user
   I want search to include results from the web
