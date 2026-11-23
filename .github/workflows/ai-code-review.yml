@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
     steps:
       - name: PR Agent action step
-        uses: the-pr-agent/pr-agent@dec3e88c029c0a32957bd95aa694cb34d2b256e0
+        uses: the-pr-agent/pr-agent@b75a0d246f4c7758b95047779b7210246f9fd856
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
