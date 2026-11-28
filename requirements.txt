@@ -10,7 +10,7 @@ django-cloudinary-storage
 python-dotenv
 coverage
 behave-django
-selenium==4.52.0
+selenium==4.54.0
 flaky
 pylint
 Pillow>=13.0.0
