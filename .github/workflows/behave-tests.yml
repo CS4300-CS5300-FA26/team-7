@@ -26,5 +26,6 @@ jobs:
         - name: Run Behave Tests
           env:
             CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
+            GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           run: |
             python manage.py behave
