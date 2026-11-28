@@ -1,14 +1,25 @@
 {% extends "crate/base.html" %}
-
-{% block title %}Sign up - Crate{% endblock %}
+{% block title %}Create your account - Crate{% endblock %}
 {% block content %}
-  <div class="container mt-5">
-    <h2 style="margin-bottom: 3vh;">Create an Account</h2>
-    <form method="post" style="margin-bottom: 3vh;">
+<section class="container py-5 md:py-16">
+  <div class="crate-auth-card mx-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-4 p-md-5">
+    <div class="crate-icon mb-4"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></div>
+    <h1 class="h2 fw-bold tracking-tight mb-2">Create your account</h1>
+    <p class="text-slate-500 mb-4">Start building your personal music library.</p>
+    <form method="post" class="crate-form space-y-4">
       {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">Sign Up</button>
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      <div class="crate-field">
+        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary crate-primary w-100 py-2">Sign Up</button>
     </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Log in here</a>.</p>
+    <p class="text-center mt-4 mb-0 text-slate-600">Already have an account? <a class="crate-link fw-semibold" href="{% url 'login' %}">Log in</a></p>
   </div>
+</section>
 {% endblock %}

@@ -22,7 +22,7 @@ class HomeViewTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "crate/home.html")
-        self.assertContains(response, "You are not logged in.")
+        self.assertContains(response, "Get started")
         self.assertContains(response, reverse("login"))
         self.assertContains(response, reverse("signup"))
         self.assertNotContains(response, "Log Out")
@@ -34,7 +34,7 @@ class HomeViewTests(TestCase):
         self.assertContains(response, "alice")
         self.assertContains(response, "Log Out")
         self.assertContains(response, reverse("song_list"))
-        self.assertNotContains(response, "You are not logged in.")
+        self.assertNotContains(response, "Get started")
  
 
 # =============== PAGES TEST ================

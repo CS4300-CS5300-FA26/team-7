@@ -7,23 +7,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Crate{% endblock %}</title>
     <!--Bootstrap-->
+    <style>
+         main {
+            padding-bottom: 7rem;
+         }
+    </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <!-- Tailwind utilities layered alongside existing Bootstrap components. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { corePlugins: { preflight: false }, theme: { extend: { colors: { ink: '#111827', accent: '#6366f1' } } } };</script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'crate/css/modern.css' %}">
     <!--Font Awesome-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css">
   </head>
-  <body>
-    <header class="p-3 text-bg-dark">
-      <div class="container"> 
-        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start"> 
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <header class="crate-header sticky-top border-bottom border-slate-800/60 shadow-sm">
+      <div class="container py-1"> 
+        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start gap-2"> 
           <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0"> 
-            <li><a href="/" class="nav-link px-2 text-secondary">Home</a></li> 
+            <li><a href="/" class="nav-link px-3 text-white">Home</a></li> 
             {% if user.is_authenticated %}
-            <li><a href="{% url 'playlists' %}" class="nav-link px-2 text-white"><i class="fa-solid fa-shuffle"></i>Playlists</a></li>
-            <li><a href="{% url 'my_account' %}" class="nav-link px-2 text-white"><i class="fa-solid fa-circle-user"></i>My Account</a></li>
-            <li><a href="{% url 'song_list' %}" class="nav-link px-2 text-white"><i class="fa-solid fa-music"></i>My Songs</a></li> 
-            <li><a href="{% url 'recommendations' %}" class="nav-link px-2 text-white"><i class="fa-solid fa-star"></i>Recommendations</a></li> 
+            <li><a href="{% url 'playlists' %}" class="nav-link px-3 text-white"><i class="fa-solid fa-shuffle"></i>Playlists</a></li>
+            <li><a href="{% url 'my_account' %}" class="nav-link px-3 text-white"><i class="fa-solid fa-circle-user"></i>My Account</a></li>
+            <li><a href="{% url 'song_list' %}" class="nav-link px-3 text-white"><i class="fa-solid fa-music"></i>My Songs</a></li> 
+            <li><a href="{% url 'recommendations' %}" class="nav-link px-3 text-white"><i class="fa-solid fa-star"></i>Recommendations</a></li> 
             {% else %}
-            <li><a href="/" class="nav-link px-2 text-white">About Crate</a></li> 
+            <li><a href="/" class="nav-link px-3 text-white">About Crate</a></li> 
             {% endif %}
           </ul> 
           
@@ -49,7 +59,7 @@
     </main>
     {% if user.is_authenticated %}
     <!-- Site-wide music player and queue: one <audio> element for the whole app. -->
-    <div id="player-bar" class="fixed-bottom text-bg-dark border-top border-secondary shadow" data-bs-theme="dark" data-user-id="{{ user.pk }}" hidden>
+    <div id="player-bar" class="fixed-bottom text-bg-dark border-top border-secondary shadow crate-player" data-bs-theme="dark" data-user-id="{{ user.pk }}" hidden>
       <div id="queue-panel" class="container py-2" hidden>
         <div class="d-flex justify-content-between align-items-center mb-2">
           <strong>Queue</strong>
@@ -565,7 +575,7 @@
     //
     // A normal link click loads a whole new page, which destroys the <audio> element and stops the
     // music. Instead, clicks on links and form submissions are sent in the background and only the
-    // content inside <main> is replaced. The player bar is never touched, so playback carries on.
+    // content inside <main class="crate-main pb-28"> is replaced. The player bar is never touched, so playback carries on.
     // Anything unusual (admin pages, errors, being logged out, network trouble) falls back to the
     // browser's ordinary navigation.
     (function () {

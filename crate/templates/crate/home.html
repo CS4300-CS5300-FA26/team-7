@@ -1,24 +1,24 @@
 {% extends "crate/base.html" %}
-
-
 {% block content %}
-
-
-
-<div class="homepage container mt-5 center-items">
-
-    <h2>Welcome to Crate</h2>
-
-    {% if user.is_authenticated %}
-        <p>Hello, <strong>{{ user.username }}</strong>!</p>
-        
-        <a href="{% url 'song_list' %}">My Songs</a> | <a href="{% url 'playlists' %}">My Playlists</a>
-    {% else %} 
-        <p>You are not logged in.</p>
-        <a href="{% url 'login' %}">Log In</a> | <a href="{% url 'signup' %}">Sign Up</a>
-    {% endif %}
-</div>
-
-
-
+<section class="container py-5 md:py-20">
+  <div class="crate-hero rounded-3xl p-4 p-md-5 text-white overflow-hidden">
+    <div class="relative z-10 max-w-2xl py-4">
+      <span class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-sm mb-4"><i class="fa-solid fa-record-vinyl"></i> Your music, your space</span>
+      <h1 class="display-4 fw-bold tracking-tight mb-3">Welcome to Crate.</h1>
+      {% if user.is_authenticated %}
+      <p class="fs-5 text-white/80 mb-4">Hey, {{ user.username }}. Pick up where you left off.</p>
+      <div class="d-flex flex-wrap gap-3"><a class="btn btn-light px-4 py-2 fw-semibold" href="{% url 'song_list' %}"><i class="fa-solid fa-music me-2"></i>My Songs</a><a class="btn btn-outline-light px-4 py-2" href="{% url 'playlists' %}">My Playlists</a></div>
+      {% else %}
+      <p class="fs-5 text-white/80 mb-4">One beautiful home for your tracks, playlists, and discoveries.</p>
+      <div class="d-flex flex-wrap gap-3"><a class="btn btn-light px-4 py-2 fw-semibold" href="{% url 'signup' %}">Get started</a><a class="btn btn-outline-light px-4 py-2" href="{% url 'login' %}">Log in</a></div>
+      
+      {% endif %}
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+    <div class="crate-feature"><i class="fa-solid fa-compact-disc text-indigo-500 fs-3"></i><h2 class="h5 fw-bold mt-3">Your collection</h2><p class="text-slate-500 mb-0">Keep your favorite tracks organized in one place.</p></div>
+    <div class="crate-feature"><i class="fa-solid fa-layer-group text-indigo-500 fs-3"></i><h2 class="h5 fw-bold mt-3">Curated playlists</h2><p class="text-slate-500 mb-0">Build the perfect soundtrack for any moment.</p></div>
+    <div class="crate-feature"><i class="fa-solid fa-headphones text-indigo-500 fs-3"></i><h2 class="h5 fw-bold mt-3">Listen anywhere</h2><p class="text-slate-500 mb-0">Your music is ready whenever you are.</p></div>
+  </div>
+</section>
 {% endblock %}

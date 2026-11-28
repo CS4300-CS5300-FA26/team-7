@@ -96,7 +96,7 @@ class LogoutTests(TestCase):
     def test_logged_out_user_sees_anonymous_home(self):
         self.client.post(reverse("logout"))
         response = self.client.get(reverse("home"))
-        self.assertContains(response, "You are not logged in.")
+        self.assertContains(response, "Get started")
 
 
 

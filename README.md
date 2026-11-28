@@ -59,3 +59,15 @@ previously saved to local `media/covers/`. If those files still exist,
 re-upload them through Edit Song after deployment. If they were lost on
 Heroku's ephemeral filesystem, obtain the originals and re-upload.
 Changing the storage backend alone does not transfer existing images.
+
+
+### Static assets and production
+
+The UI uses `crate/static/crate/css/modern.css`. WhiteNoise serves collected
+static files in production, so run `python manage.py collectstatic --noinput`
+during the build (Heroku Python buildpacks normally do this automatically).
+Do not set `DJANGO_DEBUG=True` to work around missing assets.
+
+Static storage uses `CompressedStaticFilesStorage` so a missing or stale
+manifest cannot cause page rendering to fail. The test runner switches to
+Django's plain staticfiles storage during tests.

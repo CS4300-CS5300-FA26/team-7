@@ -6,14 +6,14 @@
 {% block content %}
 	
 
-        <div class="text-center center-items">
+        <div class="container mt-5 crate-page crate-editor">
             <h1>Upload a Song</h1>
             <br />
             <br />
             <!-- upload.html Form View -->
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                {{ form.as_p }}
+                <div class="crate-form">{{ form.as_p }}</div>
                 <p id="metadata-status" class="text-muted" aria-live="polite"></p>
                 <button class="btn btn-primary" type="submit"><i class="fa-solid fa-upload"></i>Upload Track</button>
             </form>

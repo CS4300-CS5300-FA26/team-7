@@ -90,7 +90,6 @@ DATABASES = {
     )
 }
 
-AUTH_USER_MODEL = 'crate.CrateUser'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -130,7 +129,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 
 
@@ -186,3 +185,5 @@ else:
 DEFAULT_FROM_EMAIL = "noreply.crate@gmail.com"
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "www.crate-music.app"]
 CSRF_TRUSTED_ORIGINS = ["https://www.crate-music.app"]
+# Tests do not run collectstatic; use a plain static storage backend for them.
+TEST_RUNNER = "crateproject.test_runner.StaticFilesTestRunner"
