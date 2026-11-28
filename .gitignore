@@ -37,3 +37,5 @@ media/**
 
 #coverage tests
 .coverage
+
+staticfiles/
